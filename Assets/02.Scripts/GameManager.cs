@@ -6,6 +6,7 @@ public class GameManager : MonoBehaviour
     public static GameManager instance;
 
     public int playerHP = 100;
+    public int playerMaxHP = 100;
     public int currentWave = 1;
     public int maxWave = 3;
 

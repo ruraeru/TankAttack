@@ -5,6 +5,9 @@ public class Cannon : MonoBehaviour
 {
     public float speed = 6000.0f;
     public GameObject expEffect;
+    public float damage = 30.0f;
+    public float blastRadius = 3.0f;
+    private bool _exploded;
     private CapsuleCollider _collider;
     Rigidbody _rigidbody;
 
@@ -24,6 +27,14 @@ public class Cannon : MonoBehaviour
     {
      
         yield return new WaitForSeconds(tm);
+        if (_exploded) yield break; // 충돌과 3초 타이머가 겹쳐도 한 번만 폭발
+        _exploded = true;
+        // 폭발 범위 안의 적에게 피해
+        foreach (Collider hit in Physics.OverlapSphere(transform.position, blastRadius))
+        {
+            EnemyAI enemy = hit.GetComponentInParent<EnemyAI>();
+            if (enemy != null) enemy.TakeDamage(damage);
+        }
         _collider.enabled = false; // 충돌이 안되도록
         _rigidbody.isKinematic = true;  //물리엔진의 영향을 받지 않음
         //폭발 프리팹 생성
