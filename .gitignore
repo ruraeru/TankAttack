@@ -65,3 +65,31 @@ sysinfo.txt
 
 # Addressables / AssetBundles 빌드 데이터 (필요 시 포함 여부 조정)
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+# =========================================================================
+# TerrainSampleAssets (Unity 공식 팩, 1.9GB): 지형에 쓰는 TerrainLayer 6개와 그 텍스처만 올린다
+# =========================================================================
+/Assets/TerrainSampleAssets/Materials/
+/Assets/TerrainSampleAssets/Materials.meta
+/Assets/TerrainSampleAssets/Models/
+/Assets/TerrainSampleAssets/Models.meta
+/Assets/TerrainSampleAssets/Prefabs/
+/Assets/TerrainSampleAssets/Prefabs.meta
+/Assets/TerrainSampleAssets/ShaderGraphs/
+/Assets/TerrainSampleAssets/ShaderGraphs.meta
+/Assets/TerrainSampleAssets/Settings/
+/Assets/TerrainSampleAssets/Settings.meta
+/Assets/TerrainSampleAssets/TerrainBrushes/
+/Assets/TerrainSampleAssets/TerrainBrushes.meta
+/Assets/TerrainSampleAssets/README.pdf
+/Assets/TerrainSampleAssets/README.pdf.meta
+/Assets/TerrainSampleAssets/Textures/Details/
+/Assets/TerrainSampleAssets/Textures/Details.meta
+/Assets/TerrainSampleAssets/Textures/Heightmaps/
+/Assets/TerrainSampleAssets/Textures/Heightmaps.meta
+/Assets/TerrainSampleAssets/Textures/Terrain/*
+!/Assets/TerrainSampleAssets/Textures/Terrain/Grass_A_*
+!/Assets/TerrainSampleAssets/Textures/Terrain/Grass_Soil_*
+!/Assets/TerrainSampleAssets/Textures/Terrain/Muddy_*
+!/Assets/TerrainSampleAssets/Textures/Terrain/Pebbles_A_*
+!/Assets/TerrainSampleAssets/Textures/Terrain/Rock_*
+!/Assets/TerrainSampleAssets/Textures/Terrain/Sand_*
