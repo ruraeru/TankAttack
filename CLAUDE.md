@@ -35,7 +35,11 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 - **레이어**: `TurretCtrl`은 레이어 8 (`Terrain`)에만 레이캐스트한다 (`1 << 8`). 지형 레이어를 바꾸면 포탑 조준이 멈춘다.
 - **태그**: `Player` 태그를 `EnemyAI`와 `Item`이 사용한다. 플레이어 `Tank`에 이 태그가 있어야 한다.
 - **GameManager**: `GameManager.instance` 싱글턴이 `playerHP`, 웨이브 진행, 씬 전환을 가진다. 씬 전환은 이름 문자열로 한다.
-- **지형 (`MapTestScene`)**: `ArenaTerrain`은 300m × 300m × 높이 50m, 레이어 8이다. 데이터는 `Assets/01.Scenes/MapTestTerrain.asset`이고, 노이즈로 평지와 산을 섞어 코드로 만들었다 (생성 스크립트는 저장하지 않았다). TerrainLayer는 `TerrainSampleAssets/TerrainLayers`의 `Grass_A`, `Grass_Soil`, `Rock`, `Sand`, `Muddy`, `Pebbles_A` 6개를 쓴다. 지형을 바꾼 뒤에는 지형 충돌체 데이터를 다시 할당한다.
+- **지형 (`MapTestScene`)**: `ArenaTerrain`은 300m × 300m × 높이 50m, 레이어 8이다. 데이터는 `Assets/01.Scenes/MapTestTerrain.asset`이고, 노이즈로 평지와 산을 섞어 코드로 만들었다 (생성 스크립트는 저장하지 않았다). TerrainLayer는 `TerrainSampleAssets/TerrainLayers`의 `Grass_A`, `Grass_Soil`, `Rock`, `Sand`, `Muddy`, `Pebbles_A` 6개를 쓴다. 지형을 바꾼 뒤에는 지형 충돌체 데이터를 다시 할당한다. 평지는 약 25%이고 산, 구릉과 섞여 있다. 중앙 30m는 항상 평지, 가장자리 30m는 항상 산이다.
+- **기지 (`MapTestScene`)**: 사용자가 좌표를 주면 그 주변 지형 높이와 경사를 먼저 조회하고, 평지에 맞춰 30m × 30m 부지를 만든다. 지정 점이 산비탈이면 부지 중심을 평지 쪽으로 옮긴다.
+  - `AllyBase`: 중심 (-93, -82), 게이트는 동쪽(+x). 파란 깃발 (`Assets/04.Images/AllyFlag.mat`). `Markers/PlayerSpawn` (-85, 3.2, -82, 동쪽을 봄).
+  - `EnemyBase`: 중심 (96, 90), 게이트는 서쪽(-x). 빨간 깃발 (`Assets/04.Images/EnemyFlag.mat`). 정차한 `Tank_006` 한 대는 AI가 없는 장식이다. `Markers/EnemySpawn_1~4`가 게이트 안쪽에 있다.
+  - 두 기지는 `Buildings`, `Walls`, `Props`, `Markers` 하위로 나뉜다. 건물은 모두 `ithappy` 프리팹이고, 프리팹에 콜라이더가 없어서 `BoxCollider`를 직접 붙였으며 `Static`이다. 건물 겹침은 육안으로 다 확인하지 못했다.
 
 ## 에셋
 
@@ -43,13 +47,36 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 - `ithappy/Military_Free`: 건물, 소품, 차량. URP 기준으로 배포되어서 `Render_Pipeline_Convert/Unity_6_Built-In_source.unitypackage`를 임포트해 머티리얼을 `Standard`로 바꿨다. 이 폴더의 프리팹에는 콜라이더가 없다. 배치할 때 직접 붙여야 한다.
 - `TerrainSampleAssets`: Unity 공식 팩이다. **TerrainLayer 텍스처만 쓴다.** 풀, 덤불 프리팹과 머티리얼 (`Shader Graphs/TerrainGrass`)은 URP/HDRP 전용이라 Built-in에서 분홍색으로 깨진다. 쓰지 않는다. 폴더가 1.9GB다 (대부분 `Textures/*.tif`).
 - `Game GUI Vol1`: UI 스프라이트. 아직 씬에 적용하지 않았다.
+- `Low Poly Powerups` (Asset Store, 무료): 아이템 모델용으로 정했지만 **아직 임포트하지 않았다.**
 
 ## 알려진 미완성 부분
 
 - `GameManager`가 불러오는 `Ending_Win`, `Ending_Lose` 씬은 아직 없다. Build Settings에도 없으면 `LoadScene`이 실패한다.
 - `GameManager.OnPlayerDead`는 `EnemyAI`가 호출하지만, `OnWaveClear`를 부르는 곳은 없다. 웨이브 스포너가 없다.
-- `MapTestScene`에는 NavMesh를 굽지 않았다. `EnemyAI`는 `NavMeshAgent`를 쓰므로 적이 움직이지 못한다. 스폰 마커와 건물 배치도 아직 없다 (건물과 소품은 사용자가 직접 배치한다).
+- `MapTestScene`에는 NavMesh를 굽지 않았다. `EnemyAI`는 `NavMeshAgent`를 쓰므로 적이 움직이지 못한다. 두 기지가 사방이 산인 분지에 있어서, NavMesh를 구운 뒤 아군 기지와 적 기지 사이를 걸어서 갈 수 있는지 확인해야 한다.
+- `MapTestScene`의 적 탱크 프리팹 (`Assets/03.Prefabs/EnemyTank.prefab`)은 아직 씬에 배치하지 않았다. 적 외형이 서로 다른지도 확인하지 못했다.
+- Intro 씬 버튼이 불러오는 씬 이름이 `MainScene`이다. 최종 게임 씬을 `MapTestScene`으로 바꿀 때 Intro와 Build Settings를 같이 고쳐야 한다.
 - `Item`의 `ItemType.Power`는 처리 분기가 없고, HP 회복이 `playerMaxHP`로 제한되지 않는다. 아이템을 생성하는 곳도 없다.
 - 플레이어 탱크 종류는 하나뿐이다. 차체가 지면 경사에 맞춰 기울지 않는다.
 - Photon (PUN)은 코드 파일이 모두 삭제되어 `Assets/Photon/`에 설정 에셋 2개 (`PhotonAppSettings.asset`, `PhotonServerSettings.asset`)만 남아 있다. 게임 스크립트는 Photon을 쓰지 않는다. `Assets/_Recovery`, `Assets/_TerrainAutoUpgrade`는 Unity가 만든 폴더다.
 - `ProjectSettings/GraphicsSettings.asset`, `VFXManager.asset`, `ShaderGraphSettings.asset`에는 지운 URP/HDRP 패키지의 흔적이 남아 있다. 이 변경은 커밋하지 않고 있다. 렌더 파이프라인은 Built-in이다.
+
+## 진행 상황과 다음 할 일
+
+과제 조건 (Intro 씬, 게임 구현, Ending 씬) 대비 현재 상태다.
+
+- 완료: 평지와 산이 섞인 지형, 플레이어 탱크 이동/포탑/포신(각도 제한)/발사/궤도, 포탄 3종 (키 1~3), 적 AI 3종 스펙 (`EnemyAI`), 아이템 HP/Speed, 아군/적 기지, 무료 에셋 적용.
+- 다음 순서 (한 판이 끝까지 돌게 하려면 위에서부터):
+  1. `MapTestScene`에 NavMesh를 굽고 아군-적 기지 사이 이동 가능 여부를 확인한다.
+  2. 웨이브 스포너: `EnemySpawn_1~4`에서 `EnemyTank`를 생성하고, 웨이브 전멸 시 `GameManager.OnWaveClear()`를 호출한다 (난이도 조건). 적이 `PlayerSpawn` 쪽 아군 기지를 향해 진격하게 한다.
+  3. `Ending_Win`, `Ending_Lose` 씬을 만들고 Build Settings에 `IntroScene`, 게임 씬, 엔딩 2개를 등록한다. Intro 버튼의 대상 씬을 최종 게임 씬으로 바꾼다. Intro에 조작법 설명이 있는지 확인한다.
+  4. 적 탱크 외형 2종 이상 (`ithappy`의 `Tank_006` 등), `Item`의 `Power` 분기, HP 상한, 적 사망 시 아이템 드롭, `Low Poly Powerups` 임포트.
+  5. 플레이어 탱크 종류 다양화 (속도, HP, 연사), 추가 기능 1개 (점수와 최고 기록, `PlayerPrefs` 추천), `Game GUI Vol1`을 Intro 버튼과 HUD에 적용.
+  6. 마무리: 차체 경사 기울기 (선택), 전체 플레이 테스트, Build 확인.
+
+## 작업 방식
+
+- Play 모드 조작과 육안 확인은 사용자가 한다. Claude는 MCP의 Scene View 캡처와 에디터 모드 물리 시뮬레이션으로 검증하고, Play에서 확인하지 못한 것은 확인하지 못했다고 말한다.
+- 커밋 메시지는 `feat:` 접두어에 한국어로 쓴다. 푸시는 사용자가 요청할 때만 한다.
+- 커밋하지 않는 변경: `ProjectSettings/GraphicsSettings.asset`, `VFXManager.asset`, `ShaderGraphSettings.asset`, `DynamicsManager.asset`, `ProjectSettings.asset`, `TankAttack.slnx` (Unity가 다시 저장한 파일이거나 지운 URP/HDRP 흔적이다).
+- 에셋을 새로 들일 때는 Built-in 호환 여부를 먼저 확인한다. 큰 에셋은 쓰는 파일만 올리도록 `.gitignore`를 조정한다 (`TerrainSampleAssets` 선례).
