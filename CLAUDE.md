@@ -21,7 +21,10 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 - `.cs`를 수정한 직후에는 컴파일 때문에 "Unity not detected (no fresh discovery files found)" 오류가 난다. 컴파일이 끝날 때까지 기다렸다가 다시 호출한다.
 - 프리팹 인스턴스의 자식은 `SetParent`로 옮길 수 없다. 먼저 `PrefabUtility.UnpackPrefabInstance`로 인스턴스의 프리팹 연결을 푼다.
 - 에디터 모드에서 `Physics.simulationMode = SimulationMode.Script`로 바꾸고 `Physics.Simulate(dt)`를 돌리면 Play 없이 물리 이동을 검증할 수 있다. 끝나면 위치와 모드를 원래대로 되돌린다.
-- `Unity_Camera_Capture`는 Scene View 카메라라서 Screen Space Overlay UI는 찍히지 않는다. UI 확인은 Game 뷰에서 한다.
+- `Unity_Camera_Capture`는 Scene View 카메라라서 Screen Space Overlay UI는 찍히지 않는다. UI 확인은 Game 뷰에서 한다. 편집 모드에서 `ParticleSystem.Simulate`한 파티클도 이 캡처에는 안 찍힌다. 파티클은 임시 `Camera`를 만들어 `RenderTexture`에 `cam.Render()` 한 뒤 PNG로 저장해서 확인한다 (저장은 `System.IO`가 된다).
+- Unity 6.5에서는 `Object.GetInstanceID()` (CS0619), `FindFirstObjectByType`, `FindObjectsByType(FindObjectsSortMode.None)`이 막히거나 deprecated다. `FindAnyObjectByType`, `FindObjectsByType<T>()`를 쓴다.
+- `ProjectSettings/NavMeshAreas.asset`의 에이전트 설정은 `NavMesh.GetSettingsByID(0)`가 구조체 복사본이라 값을 바꿔도 저장되지 않는다. `SerializedObject`로 `m_Settings`를 고친다.
+- `RunCommand` 실행 중 `AssetDatabase.SaveAssets()`나 `Refresh()`가 구버전 `ProjectSettings/*.asset` 경고를 쏟아내서 응답이 `UNEXPECTED_ERROR`로 오지만, 로그에 `[Log]` 결과가 있으면 실행은 성공한 것이다.
 - 콘솔의 `Serialized files [version N] before 2019.1 are deprecated` 경고는 `ProjectSettings/*.asset`이 오래된 포맷이라 생기는 것이며 무시해도 된다.
 
 ## 구조
@@ -32,9 +35,15 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 - **이동 (`TankMove`)**: 지형과의 물리 충돌을 끄고 (`Physics.IgnoreCollision`, 중력도 끔) 코드가 `Terrain.SampleHeight`로 지면 높이를 따라간다. 수평 속도는 평지든 경사든 항상 `moveSpeed`다. 지형 가장자리 `edgeMargin` 안쪽까지만 간다. 지형 충돌에 맡기면 박스 콜라이더가 울퉁불퉁한 지면에 걸쳐 뜨고, 능선에서 상승 속도로 날아가고, 경사 제한을 두면 경사 근처에서 멈춘다. 건물과 적과의 충돌은 그대로다.
 - **궤도 (`TrackScroll`)**: `Chain` 메시의 UV가 한 점에 몰려 있어서 텍스처 스크롤이 안 보인다. 그래서 `Assets/05.Models/ChainTread.asset`(UV를 탱크 앞뒤 방향으로 다시 투영한 복사본)과 `Assets/04.Images/TrackTread.mat`를 `Chain`에 씌우고, `TrackScroll`이 `Rigidbody` 속도에 맞춰 오프셋을 흘린다. 옛 `TankAnim`은 `MainScene`용이다.
 - **포탄 발사**: `FireCannon`은 `Resources.Load("Cannon")`과 `Resources.Load<AudioClip>("CannonFire")`로 에셋을 이름으로 불러온다. 그래서 `Assets/Resources/Cannon.prefab`, `CannonFire.wav`의 이름과 위치를 바꾸면 안 된다. 포탄 프리팹은 `Cannon.cs`가 `Start`에서 `AddForce`로 날리고, 트리거 충돌이나 3초 후에 폭발 이펙트를 만든다.
+  - 포탄 3종은 `FireCannon.shells` (`ShellType`)에 있다. 각 항목의 `shellPrefab`, `explosionPrefab`, `icon`이 비어 있으면 `Resources/Cannon`과 포탄 프리팹의 `expEffect`를 쓴다. 현재 `Assets/03.Prefabs/Shells/Shell_Normal/Fast/Heavy.prefab` (궤적 색, 두께, 충돌 반경만 다르다)과 `Assets/03.Prefabs/ExplosionFX/FX_Normal/Fast/Heavy.prefab`을 연결해 두었다.
+  - 속도 6000~12000인 `AddForce`로 날리면 한 스텝에 최대 4.8m를 가서 지형을 뚫는다. `OnTriggerEnter`는 물리 스텝이 끝난 뒤에 불려서 포탄이 이미 지형 속에 있다. 그래서 `Cannon.cs`는 `FixedUpdate`와 `OnTriggerEnter` 양쪽에서 이전 위치부터 현재 위치까지 `Physics.Raycast`로 표면 지점을 찾고, 폭발은 `Explode(point, normal)` 하나로 모은다. 이펙트는 표면에서 `effectLift`(1m)만큼 띄워서 생성한다. 표면에 놓으면 이펙트 아래 절반이 지형에 가린다. `Player` 태그 충돌체는 레이에서 무시한다.
+  - 폭발 이펙트 수명은 3초다 (`Destroy(obj, 3.0f)`). 더 길게 하려면 이 값도 늘린다.
 - **레이어**: `TurretCtrl`은 레이어 8 (`Terrain`)에만 레이캐스트한다 (`1 << 8`). 지형 레이어를 바꾸면 포탑 조준이 멈춘다.
 - **태그**: `Player` 태그를 `EnemyAI`와 `Item`이 사용한다. 플레이어 `Tank`에 이 태그가 있어야 한다.
-- **GameManager**: `GameManager.instance` 싱글턴이 `playerHP`, 웨이브 진행, 씬 전환을 가진다. 씬 전환은 이름 문자열로 한다.
+- **GameManager**: `GameManager.instance` 싱글턴이 `playerHP`, 웨이브 진행, 씬 전환을 가진다. 씬 전환은 이름 문자열로 한다. `MapTestScene`에도 `GameManager` 오브젝트를 넣었다.
+- **NavMesh (`MapTestScene`)**: `com.unity.ai.navigation` 2.0.16 패키지의 `NavMeshSurface`가 `NavMesh` 오브젝트에 붙어 있고, 데이터는 `Assets/01.Scenes/MapTestNavMesh.asset`이다. 산이 가팔라서 에이전트 최대 경사를 기본 45°에서 60°로 올렸다 (`ProjectSettings/NavMeshAreas.asset`). 올린 뒤에야 `EnemySpawn_1~4`에서 `PlayerSpawn`까지 `PathComplete`가 나온다. 지형이나 건물을 바꾸면 `NavMeshSurface.BuildNavMesh()`로 다시 굽는다.
+- **HUD (`MapTestScene`)**: `HUDCanvas` 하나에 `PlayerHUD` (HP 바, 포탄 버튼 3개와 쿨다운, 탄 정보 패널), `WaveHUD` (웨이브, 적 수), `PauseMenu` (ESC, 우상단 `PauseButton`)가 붙어 있다. 레퍼런스 해상도 1920×1080이다. `PauseMenu`는 `Time.timeScale`을 0으로 만들고 씬을 나갈 때 1로 되돌린다. 팩에 패널과 바 틀이 없어서 틀은 Unity 기본 `UISprite`를 올리브 색으로 칠했고, 아이콘만 팩에서 가져왔다.
+- **폭발 이펙트 (`Assets/03.Prefabs/ExplosionFX`)**: Particle Pack의 `SmallExplosion`, `TinyExplosion`, `DustExplosion`을 Built-in용으로 바꾼 독립 복사본이다. 원본 머티리얼이 URP 셰이더라서 그대로는 Built-in에서 깨진다. 머티리얼은 `Legacy Shaders/Particles/Additive`와 `Alpha Blended`로 바꿨고 (`Materials/Mil_*.mat`), 쓰는 텍스처는 `Textures/`로 복사했다. 불꽃은 `ExplosionEmission` 글로우 맵을 쓰고, 불덩이 파티클의 색 곡선이 검정이던 것을 노랑에서 주황으로 바꿨다 (검정에 Additive를 쓰면 안 보인다). `FX_Heavy`에는 `FX_Normal` 복사본 `FireCore`가 들어 있고, `sortingFudge`로 불꽃을 먼지 앞에 그린다. 왜곡(distortion) 이펙트는 뺐다.
 - **지형 (`MapTestScene`)**: `ArenaTerrain`은 300m × 300m × 높이 50m, 레이어 8이다. 데이터는 `Assets/01.Scenes/MapTestTerrain.asset`이고, 노이즈로 평지와 산을 섞어 코드로 만들었다 (생성 스크립트는 저장하지 않았다). TerrainLayer는 `TerrainSampleAssets/TerrainLayers`의 `Grass_A`, `Grass_Soil`, `Rock`, `Sand`, `Muddy`, `Pebbles_A` 6개를 쓴다. 지형을 바꾼 뒤에는 지형 충돌체 데이터를 다시 할당한다. 평지는 약 25%이고 산, 구릉과 섞여 있다. 중앙 30m는 항상 평지, 가장자리 30m는 항상 산이다.
 - **기지 (`MapTestScene`)**: 사용자가 좌표를 주면 그 주변 지형 높이와 경사를 먼저 조회하고, 평지에 맞춰 30m × 30m 부지를 만든다. 지정 점이 산비탈이면 부지 중심을 평지 쪽으로 옮긴다.
   - `AllyBase`: 중심 (-93, -82), 게이트는 동쪽(+x). 파란 깃발 (`Assets/04.Images/AllyFlag.mat`). `Markers/PlayerSpawn` (-85, 3.2, -82, 동쪽을 봄).
@@ -46,14 +55,18 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 - `LowPolyMiliteryVehicles`: 플레이어 탱크 모델 (`Tank.prefab`을 풀어서 사용). Built-in `Standard` 셰이더.
 - `ithappy/Military_Free`: 건물, 소품, 차량. URP 기준으로 배포되어서 `Render_Pipeline_Convert/Unity_6_Built-In_source.unitypackage`를 임포트해 머티리얼을 `Standard`로 바꿨다. 이 폴더의 프리팹에는 콜라이더가 없다. 배치할 때 직접 붙여야 한다.
 - `TerrainSampleAssets`: Unity 공식 팩이다. **TerrainLayer 텍스처만 쓴다.** 풀, 덤불 프리팹과 머티리얼 (`Shader Graphs/TerrainGrass`)은 URP/HDRP 전용이라 Built-in에서 분홍색으로 깨진다. 쓰지 않는다. 폴더가 1.9GB다 (대부분 `Textures/*.tif`).
-- `Game GUI Vol1`: UI 스프라이트. 아직 씬에 적용하지 않았다.
+- `Game GUI Vol1`: UI 스프라이트 (4개 테마, 아이콘만 있고 패널/바 틀은 없다). `MapTestScene` HUD에 `WoodenBlocks` 테마를 썼다. 주황 아이콘을 올리브색으로 색조 변환한 복사본이 `Assets/04.Images/UI/Mil_*.png`다 (`Play`, `Restart`, `Home`, `Pause`, `Trophy`, `Info`, `Plus`). Intro 씬에는 아직 적용하지 않았다.
+- `UnityTechnologies/ParticlePack` (Unity 공식 Particle Pack): 약 200MB이고 머티리얼이 URP 셰이더다. 쓰는 이펙트와 텍스처는 `Assets/03.Prefabs/ExplosionFX`로 변환해 두었고, 팩 폴더는 `.gitignore`로 올리지 않는다 (지워도 된다).
+- `Inguz Media Studio/Free 2D Impact FX`: 2D용이라 쓰지 않는다. 지워도 된다.
 - `Low Poly Powerups` (Asset Store, 무료): 아이템 모델용으로 정했지만 **아직 임포트하지 않았다.**
 
 ## 알려진 미완성 부분
 
 - `GameManager`가 불러오는 `Ending_Win`, `Ending_Lose` 씬은 아직 없다. Build Settings에도 없으면 `LoadScene`이 실패한다.
 - `GameManager.OnPlayerDead`는 `EnemyAI`가 호출하지만, `OnWaveClear`를 부르는 곳은 없다. 웨이브 스포너가 없다.
-- `MapTestScene`에는 NavMesh를 굽지 않았다. `EnemyAI`는 `NavMeshAgent`를 쓰므로 적이 움직이지 못한다. 두 기지가 사방이 산인 분지에 있어서, NavMesh를 구운 뒤 아군 기지와 적 기지 사이를 걸어서 갈 수 있는지 확인해야 한다.
+- NavMesh는 구웠고 스폰에서 플레이어 기지까지 경로는 이어지지만, 적이 실제로 걸어가는지는 Play에서 확인하지 못했다. `EnemyTank`의 `NavMeshAgent` 크기가 기본 에이전트 (반지름 0.5, 높이 2)와 맞는지도 확인해야 한다.
+- 포탄 모델은 아직 임시다. 3종 모두 메시 없이 궤적 (`TrailRenderer`)만 있다. 탱크 포탄 모델을 받으면 `Shell_*.prefab`에 자식으로 붙이면 된다. 탄 정보 패널의 아이콘은 `Info` 하나이고 `ShellType.icon`은 비어 있다.
+- HUD 레이아웃, 폭발 이펙트의 실제 움직임, ESC 일시정지, 고속탄이 지형에서 터지는 위치는 Play에서 확인하지 못했다. 이펙트 모양은 편집 모드에서 카메라로 렌더링해서 확인했다.
 - `MapTestScene`의 적 탱크 프리팹 (`Assets/03.Prefabs/EnemyTank.prefab`)은 아직 씬에 배치하지 않았다. 적 외형이 서로 다른지도 확인하지 못했다.
 - Intro 씬 버튼이 불러오는 씬 이름이 `MainScene`이다. 최종 게임 씬을 `MapTestScene`으로 바꿀 때 Intro와 Build Settings를 같이 고쳐야 한다.
 - `Item`의 `ItemType.Power`는 처리 분기가 없고, HP 회복이 `playerMaxHP`로 제한되지 않는다. 아이템을 생성하는 곳도 없다.
@@ -65,13 +78,13 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 
 과제 조건 (Intro 씬, 게임 구현, Ending 씬) 대비 현재 상태다.
 
-- 완료: 평지와 산이 섞인 지형, 플레이어 탱크 이동/포탑/포신(각도 제한)/발사/궤도, 포탄 3종 (키 1~3), 적 AI 3종 스펙 (`EnemyAI`), 아이템 HP/Speed, 아군/적 기지, 무료 에셋 적용.
+- 완료: 평지와 산이 섞인 지형, 플레이어 탱크 이동/포탑/포신(각도 제한)/발사/궤도, 포탄 3종 (키 1~3, 궤적과 폭발 이펙트가 서로 다름), 적 AI 3종 스펙 (`EnemyAI`), 아이템 HP/Speed, 아군/적 기지, 무료 에셋 적용, NavMesh 베이크, `MapTestScene` HUD (HP, 포탄 선택, 탄 정보, 웨이브/적 수, 일시정지 메뉴, 밀리터리 색).
 - 다음 순서 (한 판이 끝까지 돌게 하려면 위에서부터):
-  1. `MapTestScene`에 NavMesh를 굽고 아군-적 기지 사이 이동 가능 여부를 확인한다.
+  1. (완료) NavMesh. 적이 실제로 걷는지는 2번과 함께 Play에서 확인한다.
   2. 웨이브 스포너: `EnemySpawn_1~4`에서 `EnemyTank`를 생성하고, 웨이브 전멸 시 `GameManager.OnWaveClear()`를 호출한다 (난이도 조건). 적이 `PlayerSpawn` 쪽 아군 기지를 향해 진격하게 한다.
   3. `Ending_Win`, `Ending_Lose` 씬을 만들고 Build Settings에 `IntroScene`, 게임 씬, 엔딩 2개를 등록한다. Intro 버튼의 대상 씬을 최종 게임 씬으로 바꾼다. Intro에 조작법 설명이 있는지 확인한다.
   4. 적 탱크 외형 2종 이상 (`ithappy`의 `Tank_006` 등), `Item`의 `Power` 분기, HP 상한, 적 사망 시 아이템 드롭, `Low Poly Powerups` 임포트.
-  5. 플레이어 탱크 종류 다양화 (속도, HP, 연사), 추가 기능 1개 (점수와 최고 기록, `PlayerPrefs` 추천), `Game GUI Vol1`을 Intro 버튼과 HUD에 적용.
+  5. 플레이어 탱크 종류 다양화 (속도, HP, 연사), 추가 기능 1개 (점수와 최고 기록, `PlayerPrefs` 추천), `Game GUI Vol1`을 Intro 버튼에 적용 (HUD는 적용 완료).
   6. 마무리: 차체 경사 기울기 (선택), 전체 플레이 테스트, Build 확인.
 
 ## 작업 방식

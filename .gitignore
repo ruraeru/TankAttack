@@ -93,3 +93,7 @@ sysinfo.txt
 !/Assets/TerrainSampleAssets/Textures/Terrain/Pebbles_A_*
 !/Assets/TerrainSampleAssets/Textures/Terrain/Rock_*
 !/Assets/TerrainSampleAssets/Textures/Terrain/Sand_*
+
+# Particle Pack (Unity 공식 팩, 약 200MB, URP 셰이더): 쓰는 텍스처와 머티리얼은 Assets/03.Prefabs/ExplosionFX에 Built-in용으로 복사해 둔다
+/Assets/UnityTechnologies/
+/Assets/UnityTechnologies.meta

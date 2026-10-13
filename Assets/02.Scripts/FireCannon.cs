@@ -9,6 +9,9 @@ public class ShellType
     public float damage;
     public float blastRadius;
     public float cooldown;
+    public GameObject shellPrefab;      // 비우면 Resources/Cannon 사용
+    public GameObject explosionPrefab;  // 비우면 포탄 프리팹의 expEffect 사용
+    public Sprite icon;
 }
 
 public class FireCannon : MonoBehaviour
@@ -68,8 +71,10 @@ public class FireCannon : MonoBehaviour
         nextFireTime = Time.time + Current.cooldown;
 
         sfx.PlayOneShot(fireSfx, 1.0f);
-        GameObject obj = Instantiate(cannon, firePos.position, firePos.rotation);
+        GameObject prefab = Current.shellPrefab != null ? Current.shellPrefab : cannon;
+        GameObject obj = Instantiate(prefab, firePos.position, firePos.rotation);
         Cannon c = obj.GetComponent<Cannon>();
+        if (Current.explosionPrefab != null) c.expEffect = Current.explosionPrefab;
         c.speed = Current.speed;
         c.damage = Current.damage;
         c.blastRadius = Current.blastRadius;
