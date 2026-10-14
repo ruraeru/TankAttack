@@ -45,6 +45,8 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 - **HUD (`MapTestScene`)**: `HUDCanvas` 하나에 `PlayerHUD` (HP 바, 포탄 버튼 3개와 쿨다운, 탄 정보 패널), `WaveHUD` (웨이브, 적 수), `PauseMenu` (ESC, 우상단 `PauseButton`)가 붙어 있다. 레퍼런스 해상도 1920×1080이다. `PauseMenu`는 `Time.timeScale`을 0으로 만들고 씬을 나갈 때 1로 되돌린다. 팩에 패널과 바 틀이 없어서 틀은 Unity 기본 `UISprite`를 올리브 색으로 칠했고, 아이콘만 팩에서 가져왔다.
 - **폭발 이펙트 (`Assets/03.Prefabs/ExplosionFX`)**: Particle Pack의 `SmallExplosion`, `TinyExplosion`, `DustExplosion`을 Built-in용으로 바꾼 독립 복사본이다. 원본 머티리얼이 URP 셰이더라서 그대로는 Built-in에서 깨진다. 머티리얼은 `Legacy Shaders/Particles/Additive`와 `Alpha Blended`로 바꿨고 (`Materials/Mil_*.mat`), 쓰는 텍스처는 `Textures/`로 복사했다. 불꽃은 `ExplosionEmission` 글로우 맵을 쓰고, 불덩이 파티클의 색 곡선이 검정이던 것을 노랑에서 주황으로 바꿨다 (검정에 Additive를 쓰면 안 보인다). `FX_Heavy`에는 `FX_Normal` 복사본 `FireCore`가 들어 있고, `sortingFudge`로 불꽃을 먼지 앞에 그린다. 왜곡(distortion) 이펙트는 뺐다.
 - **지형 (`MapTestScene`)**: `ArenaTerrain`은 300m × 300m × 높이 50m, 레이어 8이다. 데이터는 `Assets/01.Scenes/MapTestTerrain.asset`이고, 노이즈로 평지와 산을 섞어 코드로 만들었다 (생성 스크립트는 저장하지 않았다). TerrainLayer는 `TerrainSampleAssets/TerrainLayers`의 `Grass_A`, `Grass_Soil`, `Rock`, `Sand`, `Muddy`, `Pebbles_A` 6개를 쓴다. 지형을 바꾼 뒤에는 지형 충돌체 데이터를 다시 할당한다. 평지는 약 25%이고 산, 구릉과 섞여 있다. 중앙 30m는 항상 평지, 가장자리 30m는 항상 산이다.
+- **웨이브 스포너 (`MapTestScene`)**: `WaveSpawner` 오브젝트가 `EnemyTank` 프리팹과 `EnemySpawn_1~4`를 참조한다. 시작 5초 뒤 1웨이브가 나오고, 스폰 지점을 돌아가며 1.5초 간격으로 생성한다 (NavMesh 위로 `SamplePosition`). 적 수는 `3 + 2 × (웨이브 - 1)`이고, 종류는 1웨이브 Normal만, 2웨이브부터 Speed, 3웨이브부터 Heavy가 섞인다. 웨이브 적이 전멸하면 `GameManager.OnWaveClear()`를 부르고 5초 쉰다. 마지막 웨이브를 깨면 `Ending_Win`으로 간다.
+- **적 공격 (`EnemyAI`)**: 적은 플레이어 1번 포탄(`Shell_Normal.prefab`)을 포신 끝 `Cannon/FirePos`에서 쏜다. `attackRange` 안(Speed 70m, Normal 90m, Heavy 110m)이면 멈춰서 쏘고, 시야 체크는 없다. 거리는 탱크 중심끼리 재는데 탱크가 16~21m 길이라 사거리를 크게 잡았다. 피해량은 적 종류별 `damage`다. `Cannon.fromEnemy`가 true면 포탄이 적 탱크를 무시하고, 폭발 반경 안의 `Player` 태그에 `playerHP`를 깎는다. 포탄이 중력으로 처지는 만큼 위로 보정해서 조준한다 (움직이는 플레이어 앞서 쏘기는 없다). 플레이어 포탄이 `TakeDamage`로 적 HP를 0으로 만들면 `Die()`가 폭발 이펙트를 내고 지운다. `EnemyTank`의 `BoxCollider`는 모델 크기 (7.6×9.3×21m)에 맞췄다. 기본값 1×1×1이면 포탄이 거의 안 맞는다.
 - **기지 (`MapTestScene`)**: 사용자가 좌표를 주면 그 주변 지형 높이와 경사를 먼저 조회하고, 평지에 맞춰 30m × 30m 부지를 만든다. 지정 점이 산비탈이면 부지 중심을 평지 쪽으로 옮긴다.
   - `AllyBase`: 중심 (-93, -82), 게이트는 동쪽(+x). 파란 깃발 (`Assets/04.Images/AllyFlag.mat`). `Markers/PlayerSpawn` (-85, 3.2, -82, 동쪽을 봄).
   - `EnemyBase`: 중심 (96, 90), 게이트는 서쪽(-x). 빨간 깃발 (`Assets/04.Images/EnemyFlag.mat`). 정차한 `Tank_006` 한 대는 AI가 없는 장식이다. `Markers/EnemySpawn_1~4`가 게이트 안쪽에 있다.
@@ -63,11 +65,10 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 ## 알려진 미완성 부분
 
 - `GameManager`가 불러오는 `Ending_Win`, `Ending_Lose` 씬은 아직 없다. Build Settings에도 없으면 `LoadScene`이 실패한다.
-- `GameManager.OnPlayerDead`는 `EnemyAI`가 호출하지만, `OnWaveClear`를 부르는 곳은 없다. 웨이브 스포너가 없다.
-- NavMesh는 구웠고 스폰에서 플레이어 기지까지 경로는 이어지지만, 적이 실제로 걸어가는지는 Play에서 확인하지 못했다. `EnemyTank`의 `NavMeshAgent` 크기가 기본 에이전트 (반지름 0.5, 높이 2)와 맞는지도 확인해야 한다.
+- 웨이브 스포너와 적의 포탄 공격은 Play에서 확인하지 못했다. 적이 실제로 걸어가는지, 포탄이 포구에서 나가 플레이어에 맞는지, 사거리와 조준 보정이 적당한지 봐야 한다. `EnemyTank`의 `NavMeshAgent` 반지름이 1.5라서 베이크 기본값 (0.5)과 다르다. 적이 막히면 이 값을 확인한다.
 - 포탄 모델은 아직 임시다. 3종 모두 메시 없이 궤적 (`TrailRenderer`)만 있다. 탱크 포탄 모델을 받으면 `Shell_*.prefab`에 자식으로 붙이면 된다. 탄 정보 패널의 아이콘은 `Info` 하나이고 `ShellType.icon`은 비어 있다.
 - HUD 레이아웃, 폭발 이펙트의 실제 움직임, ESC 일시정지, 고속탄이 지형에서 터지는 위치는 Play에서 확인하지 못했다. 이펙트 모양은 편집 모드에서 카메라로 렌더링해서 확인했다.
-- `MapTestScene`의 적 탱크 프리팹 (`Assets/03.Prefabs/EnemyTank.prefab`)은 아직 씬에 배치하지 않았다. 적 외형이 서로 다른지도 확인하지 못했다.
+- 적 탱크 (`Assets/03.Prefabs/EnemyTank.prefab`)는 `WaveSpawner`가 생성한다. 씬에 미리 배치하지 않는다. 적 외형이 종류별로 다른지는 확인하지 못했다.
 - Intro 씬 버튼이 불러오는 씬 이름이 `MainScene`이다. 최종 게임 씬을 `MapTestScene`으로 바꿀 때 Intro와 Build Settings를 같이 고쳐야 한다.
 - `Item`의 `ItemType.Power`는 처리 분기가 없고, HP 회복이 `playerMaxHP`로 제한되지 않는다. 아이템을 생성하는 곳도 없다.
 - 플레이어 탱크 종류는 하나뿐이다. 차체가 지면 경사에 맞춰 기울지 않는다.
@@ -78,10 +79,10 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 
 과제 조건 (Intro 씬, 게임 구현, Ending 씬) 대비 현재 상태다.
 
-- 완료: 평지와 산이 섞인 지형, 플레이어 탱크 이동/포탑/포신(각도 제한)/발사/궤도, 포탄 3종 (키 1~3, 궤적과 폭발 이펙트가 서로 다름), 적 AI 3종 스펙 (`EnemyAI`), 아이템 HP/Speed, 아군/적 기지, 무료 에셋 적용, NavMesh 베이크, `MapTestScene` HUD (HP, 포탄 선택, 탄 정보, 웨이브/적 수, 일시정지 메뉴, 밀리터리 색).
+- 완료: 평지와 산이 섞인 지형, 플레이어 탱크 이동/포탑/포신(각도 제한)/발사/궤도, 포탄 3종 (키 1~3, 궤적과 폭발 이펙트가 서로 다름), 적 AI 3종 스펙 (`EnemyAI`, 포탄 공격과 사망 포함), 웨이브 스포너, 아이템 HP/Speed, 아군/적 기지, 무료 에셋 적용, NavMesh 베이크, `MapTestScene` HUD (HP, 포탄 선택, 탄 정보, 웨이브/적 수, 일시정지 메뉴, 밀리터리 색).
 - 다음 순서 (한 판이 끝까지 돌게 하려면 위에서부터):
   1. (완료) NavMesh. 적이 실제로 걷는지는 2번과 함께 Play에서 확인한다.
-  2. 웨이브 스포너: `EnemySpawn_1~4`에서 `EnemyTank`를 생성하고, 웨이브 전멸 시 `GameManager.OnWaveClear()`를 호출한다 (난이도 조건). 적이 `PlayerSpawn` 쪽 아군 기지를 향해 진격하게 한다.
+  2. (완료, Play 확인 전) 웨이브 스포너와 적 포탄 공격. 적은 플레이어 탱크를 향해 진격한다 (아군 기지가 목표는 아니다).
   3. `Ending_Win`, `Ending_Lose` 씬을 만들고 Build Settings에 `IntroScene`, 게임 씬, 엔딩 2개를 등록한다. Intro 버튼의 대상 씬을 최종 게임 씬으로 바꾼다. Intro에 조작법 설명이 있는지 확인한다.
   4. 적 탱크 외형 2종 이상 (`ithappy`의 `Tank_006` 등), `Item`의 `Power` 분기, HP 상한, 적 사망 시 아이템 드롭, `Low Poly Powerups` 임포트.
   5. 플레이어 탱크 종류 다양화 (속도, HP, 연사), 추가 기능 1개 (점수와 최고 기록, `PlayerPrefs` 추천), `Game GUI Vol1`을 Intro 버튼에 적용 (HUD는 적용 완료).

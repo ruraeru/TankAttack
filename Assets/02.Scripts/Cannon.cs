@@ -8,6 +8,7 @@ public class Cannon : MonoBehaviour
     public float damage = 30.0f;
     public float blastRadius = 3.0f;
     public float effectLift = 1.0f; // 폭발 이펙트를 표면에서 띄우는 높이 (지면에 반쯤 묻혀 보이지 않게)
+    public bool fromEnemy; // 적이 쏜 포탄: 플레이어에게 피해, 적 탱크는 무시
     private bool _exploded;
     private Vector3 _prevPos;
     private CapsuleCollider _collider;
@@ -37,6 +38,7 @@ public class Cannon : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (_exploded) return;
+        if (fromEnemy && other.GetComponentInParent<EnemyAI>() != null) return;
         // 트리거는 물리 스텝 뒤에 불려서 이미 지형 속으로 들어가 있다. 이전 위치부터 다시 쏴서 표면 지점을 찾는다
         if (TryHitBetween(_prevPos, _rigidbody.position, out RaycastHit hit)) Explode(hit.point, hit.normal);
         else Explode(transform.position, Vector3.up);
@@ -46,10 +48,15 @@ public class Cannon : MonoBehaviour
         Vector3 delta = to - from;
         if (delta.sqrMagnitude > 0.0001f &&
             Physics.Raycast(from, delta.normalized, out hit, delta.magnitude, ~0, QueryTriggerInteraction.Ignore) &&
-            !hit.collider.CompareTag("Player"))
+            IsValidHit(hit.collider))
             return true;
         hit = default;
         return false;
+    }
+    bool IsValidHit(Collider c)
+    {
+        if (fromEnemy) return c.GetComponentInParent<EnemyAI>() == null;
+        return !c.CompareTag("Player");
     }
     IEnumerator ExplosionCannon(float tm)
     {
@@ -64,8 +71,18 @@ public class Cannon : MonoBehaviour
         _rigidbody.isKinematic = true;  //물리엔진의 영향을 받지 않음
         transform.position = point;
         // 폭발 범위 안의 적에게 피해
+        bool playerHit = false;
         foreach (Collider hit in Physics.OverlapSphere(point, blastRadius))
         {
+            if (fromEnemy)
+            {
+                if (!playerHit && hit.CompareTag("Player"))
+                {
+                    playerHit = true;
+                    DamagePlayer();
+                }
+                continue;
+            }
             EnemyAI enemy = hit.GetComponentInParent<EnemyAI>();
             if (enemy != null) enemy.TakeDamage(damage);
         }
@@ -74,6 +91,17 @@ public class Cannon : MonoBehaviour
         GameObject obj = (GameObject)Instantiate(expEffect, point + normal * effectLift, Quaternion.identity);
         Destroy(obj, 3.0f);//폭발효과 3초뒤 사라짐(Particle Pack 이펙트가 길다),
         Destroy(this.gameObject, 1.0f); //Trail Renderer가 사라질 때 까지 기다림
+    }
+    void DamagePlayer()
+    {
+        GameManager gm = GameManager.instance;
+        if (gm == null || gm.playerHP <= 0) return;
+        gm.playerHP -= Mathf.RoundToInt(damage);
+        if (gm.playerHP <= 0)
+        {
+            gm.playerHP = 0;
+            gm.OnPlayerDead();
+        }
     }
     // Update is called once per frame
     void Update()
