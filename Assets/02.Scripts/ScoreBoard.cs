@@ -27,16 +27,6 @@ public static class ScoreBoard
         PlayerPrefs.Save();
     }
 
-    public static int KillPoints(EnemyType type)
-    {
-        switch (type)
-        {
-            case EnemyType.Speed: return 150;
-            case EnemyType.Heavy: return 250;
-            default: return 100;
-        }
-    }
-
     // 엔딩으로 넘어가기 직전에 한 번 부른다.
     public static void Commit(bool won)
     {

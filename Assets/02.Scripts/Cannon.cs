@@ -11,6 +11,7 @@ public class Cannon : MonoBehaviour
     public float lifetime = 3.0f; // 이 시간이 지나면 허공에서 터진다 (공습 미사일은 더 길게)
     public float effectScale = 1f; // 폭발 이펙트 크기 배율
     public bool fromEnemy; // 적이 쏜 포탄: 플레이어에게 피해, 적 탱크는 무시
+    public float proximityRadius = 6f; // 근접 신관: 플레이어 포탄이 공중 적 이 거리 안을 지나가면 터진다
     private bool _exploded;
     private Vector3 _prevPos;
     private CapsuleCollider _collider;
@@ -35,6 +36,7 @@ public class Cannon : MonoBehaviour
             Explode(hit.point, hit.normal);
             return;
         }
+        if (!fromEnemy && TryProximity(_prevPos, pos)) return;
         _prevPos = pos;
     }
     private void OnTriggerEnter(Collider other)
@@ -55,6 +57,23 @@ public class Cannon : MonoBehaviour
         hit = default;
         return false;
     }
+    // 근접 신관: 이번 스텝에 지나간 구간 둘레 proximityRadius 안에 공중 적이 있으면 그 자리에서 터뜨린다
+    // 폭발 반경이 작은 포탄도 맞도록 그 적에게는 직접 피해를 준다
+    bool TryProximity(Vector3 from, Vector3 to)
+    {
+        if (proximityRadius <= 0f) return false;
+        foreach (Collider c in Physics.OverlapCapsule(from, to, proximityRadius, ~0, QueryTriggerInteraction.Ignore))
+        {
+            EnemyAI enemy = c.GetComponentInParent<EnemyAI>();
+            if (enemy == null || !enemy.isAir) continue;
+            Vector3 seg = to - from;
+            float t = seg.sqrMagnitude > 0.0001f ? Mathf.Clamp01(Vector3.Dot(c.bounds.center - from, seg) / seg.sqrMagnitude) : 0f;
+            enemy.TakeDamage(damage);
+            Explode(from + seg * t, Vector3.up, enemy);
+            return true;
+        }
+        return false;
+    }
     bool IsValidHit(Collider c)
     {
         if (fromEnemy) return c.GetComponentInParent<EnemyAI>() == null;
@@ -66,7 +85,7 @@ public class Cannon : MonoBehaviour
         yield return new WaitForSeconds(tm);
         Explode(transform.position, Vector3.up); // 3초 타이머: 허공에서 터짐
     }
-    void Explode(Vector3 point, Vector3 normal)
+    void Explode(Vector3 point, Vector3 normal, EnemyAI alreadyHit = null)
     {
         if (_exploded) return; // 충돌과 3초 타이머가 겹쳐도 한 번만 폭발
         _exploded = true;
@@ -86,35 +105,34 @@ public class Cannon : MonoBehaviour
                 continue;
             }
             EnemyAI enemy = hit.GetComponentInParent<EnemyAI>();
-            if (enemy != null) enemy.TakeDamage(damage);
+            if (enemy != null && enemy != alreadyHit) enemy.TakeDamage(damage);
         }
         _collider.enabled = false; // 충돌이 안되도록
         // 모델은 바로 숨기고 궤적(Trail)만 1초 남긴다. 폭발 이펙트만 보이게
         foreach (Renderer r in GetComponentsInChildren<MeshRenderer>()) r.enabled = false;
         //폭발 프리팹 생성
-        GameObject obj = (GameObject)Instantiate(expEffect, point + normal * effectLift, Quaternion.identity);
-        if (!Mathf.Approximately(effectScale, 1f))
+        SpawnEffect(expEffect, point + normal * effectLift, effectScale);
+        Destroy(this.gameObject, 1.0f); //Trail Renderer가 사라질 때 까지 기다림
+    }
+    // 폭발 이펙트를 만들고 3초 뒤 지운다 (Particle Pack 이펙트가 길다). 배율을 주면 파티클 크기도 같이 키운다
+    public static GameObject SpawnEffect(GameObject prefab, Vector3 pos, float scale)
+    {
+        GameObject obj = Instantiate(prefab, pos, Quaternion.identity);
+        if (!Mathf.Approximately(scale, 1f))
         {
             foreach (ParticleSystem ps in obj.GetComponentsInChildren<ParticleSystem>())
             {
                 var main = ps.main;
                 main.scalingMode = ParticleSystemScalingMode.Hierarchy; // 파티클 크기도 같이 커지게
             }
-            obj.transform.localScale *= effectScale;
+            obj.transform.localScale *= scale;
         }
         Destroy(obj, 3.0f);//폭발효과 3초뒤 사라짐(Particle Pack 이펙트가 길다),
-        Destroy(this.gameObject, 1.0f); //Trail Renderer가 사라질 때 까지 기다림
+        return obj;
     }
     void DamagePlayer()
     {
-        GameManager gm = GameManager.instance;
-        if (gm == null || gm.playerHP <= 0) return;
-        gm.playerHP -= Mathf.RoundToInt(damage);
-        if (gm.playerHP <= 0)
-        {
-            gm.playerHP = 0;
-            gm.OnPlayerDead();
-        }
+        if (GameManager.instance != null) GameManager.instance.DamagePlayer(Mathf.RoundToInt(damage));
     }
     // Update is called once per frame
     void Update()

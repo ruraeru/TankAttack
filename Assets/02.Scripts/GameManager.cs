@@ -25,6 +25,18 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(sceneName);
     }
 
+    // 적 포탄과 자폭이 플레이어에게 피해를 줄 때 쓴다
+    public void DamagePlayer(int amount)
+    {
+        if (playerHP <= 0) return;
+        playerHP -= amount;
+        if (playerHP <= 0)
+        {
+            playerHP = 0;
+            OnPlayerDead();
+        }
+    }
+
     public void OnPlayerDead()
     {
         ScoreBoard.Commit(false);
