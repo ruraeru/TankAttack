@@ -29,9 +29,9 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 
 ## 구조
 
-씬은 `Assets/01.Scenes/`의 `IntroScene` (시작 버튼 UI + 탱크 배경), `MainScene` (게임 씬), `Ending_Win`, `Ending_Lose` 네 개다. 예전 `MainScene` 내용을 `MainScene`으로 옮겼고 옛 `MainScene`(옛 탱크 구조)은 없어졌다. Build Settings 순서는 Intro, Main, Ending_Win, Ending_Lose다. 데이터 흐름은 컴포넌트가 서로를 직접 참조하는 단순한 구조이며, 여러 파일을 봐야 보이는 규칙은 다음과 같다.
+씬은 `Assets/01.Scenes/`의 `IntroScene` (시작 버튼 UI + 탱크 배경), `MainScene` (게임 씬), `Ending_Win`, `Ending_Lose` 네 개다. 예전 `MapTestScene` 내용을 `MainScene`으로 옮겼고 옛 `MainScene`(옛 탱크 구조)은 없어졌다. Build Settings 순서는 Intro, Main, Ending_Win, Ending_Lose다. 데이터 흐름은 컴포넌트가 서로를 직접 참조하는 단순한 구조이며, 여러 파일을 봐야 보이는 규칙은 다음과 같다.
 
-- **플레이어 탱크 (`MainScene`)**: 루트 `Tank`에 `Rigidbody`, `BoxCollider`, `TankMove`, `FireCannon`, `AudioSource`가 붙고 태그는 `Player`다. 그 아래 `Tank/Tank` (프리팹 연결을 푼 모델)에 `Body`, `Chain`, `TurretPivot`이 있다. `TurretPivot`(`TurretCtrl`, 마우스 방향 포탑 회전) 아래에 `Head`와 `CannonPivot`(`CannonCtrl`, 마우스 휠로 포신 각도 -8~25도 제한)이 있고, `CannonPivot` 아래에 `Canon`과 `FirePos`(포구, `FireCannon.firePos`)가 있다. 카메라는 `SmoothFollow`로 `Tank/CamPivot`을 따라간다. 포탑과 포신이 같이 돌도록 `Head`와 `Canon`은 반드시 이 피벗들의 자식이어야 한다.
+- **플레이어 탱크 (`MainScene`)**: 씬에 미리 두지 않는다. `PlayerSpawner`가 게임 시작 때 (`Awake`) `Assets/03.Prefabs/Player_TANK.prefab`을 `AllyBase/Markers/PlayerSpawn`에 만들고 카메라 `SmoothFollow` 대상을 `CamPivot`으로 건다. 씬 오브젝트가 탱크를 직접 참조하면 안 되고 `Player` 태그로 찾는다 (`PlayerHUD`는 `Start`에서 찾는다). 프리팹의 루트 `Tank`에 `Rigidbody`, `BoxCollider`, `TankMove`, `FireCannon`, `AudioSource`가 붙고 태그는 `Player`다. 그 아래 `Tank/Tank` (프리팹 연결을 푼 모델)에 `Body`, `Chain`, `TurretPivot`이 있다. `TurretPivot`(`TurretCtrl`, 마우스 방향 포탑 회전) 아래에 `Head`와 `CannonPivot`(`CannonCtrl`, 마우스 휠로 포신 각도 -8~25도 제한)이 있고, `CannonPivot` 아래에 `Canon`과 `FirePos`(포구, `FireCannon.firePos`)가 있다. 카메라는 `SmoothFollow`로 `Tank/CamPivot`을 따라간다. 포탑과 포신이 같이 돌도록 `Head`와 `Canon`은 반드시 이 피벗들의 자식이어야 한다.
 - **이동 (`TankMove`)**: 지형과의 물리 충돌을 끄고 (`Physics.IgnoreCollision`, 중력도 끔) 코드가 `Terrain.SampleHeight`로 지면 높이를 따라간다. 수평 속도는 평지든 경사든 항상 `moveSpeed`다. 지형 가장자리 `edgeMargin` 안쪽까지만 간다. 지형 충돌에 맡기면 박스 콜라이더가 울퉁불퉁한 지면에 걸쳐 뜨고, 능선에서 상승 속도로 날아가고, 경사 제한을 두면 경사 근처에서 멈춘다. 건물과 적과의 충돌은 그대로다.
 - **궤도 (`TrackScroll`)**: `Chain` 메시의 UV가 한 점에 몰려 있어서 텍스처 스크롤이 안 보인다. 그래서 `Assets/05.Models/ChainTread.asset`(UV를 탱크 앞뒤 방향으로 다시 투영한 복사본)과 `Assets/04.Images/TrackTread.mat`를 `Chain`에 씌우고, `TrackScroll`이 `Rigidbody` 속도에 맞춰 오프셋을 흘린다. 옛 `TankAnim`은 옛 `MainScene`용이라 지금은 쓰지 않는다.
 - **포탄 발사**: `FireCannon`은 `Resources.Load("Cannon")`과 `Resources.Load<AudioClip>("CannonFire")`로 에셋을 이름으로 불러온다. 그래서 `Assets/Resources/Cannon.prefab`, `CannonFire.wav`의 이름과 위치를 바꾸면 안 된다. 포탄 프리팹은 `Cannon.cs`가 `Start`에서 `AddForce`로 날리고, 트리거 충돌이나 3초 후에 폭발 이펙트를 만든다.
@@ -60,11 +60,12 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 - `Game GUI Vol1`: UI 스프라이트 (4개 테마, 아이콘만 있고 패널/바 틀은 없다). `MainScene` HUD에 `WoodenBlocks` 테마를 썼다. 주황 아이콘을 올리브색으로 색조 변환한 복사본이 `Assets/04.Images/UI/Mil_*.png`다 (`Play`, `Restart`, `Home`, `Pause`, `Trophy`, `Info`, `Plus`). Intro 씬에는 아직 적용하지 않았다.
 - `UnityTechnologies/ParticlePack` (Unity 공식 Particle Pack): 약 200MB이고 머티리얼이 URP 셰이더다. 쓰는 이펙트와 텍스처는 `Assets/03.Prefabs/ExplosionFX`로 변환해 두었고, 팩 폴더는 `.gitignore`로 올리지 않는다 (지워도 된다).
 - `Inguz Media Studio/Free 2D Impact FX`: 2D용이라 쓰지 않는다. 지워도 된다.
-- `Low Poly Powerups` (Asset Store, 무료): 아이템 모델용으로 정했지만 **아직 임포트하지 않았다.**
+- `Low Poly Powerups` (Asset Store, 무료): 아이템 모델. `Assets/03.Prefabs/Items/Item_HP/Speed/Power.prefab`이 `1 Builtin` 프리팹의 `Health`, `Speed`, `Damage` 모델을 3배로 키워 쓴다. `Multiattack`, `Shield` 모델은 아직 안 쓴다. `2 URP` 폴더는 쓰지 않는다.
 
 ## 알려진 미완성 부분
 
-- `GameManager`가 불러오는 `Ending_Win`, `Ending_Lose` 씬은 아직 없다. Build Settings에도 없으면 `LoadScene`이 실패한다.
+- 엔딩 씬 (`Ending_Win`, `Ending_Lose`)은 `EndingUI` 하나만 있고 화면은 코드로 만든다. 점수와 최고 기록 (`ScoreBoard`, `PlayerPrefs`의 `BestScore`)은 Play에서 끝까지 확인하지 못했다.
+- 필드 아이템은 `ItemSpawner`가 15초 간격으로 최대 5개 만든다. 효과 수치 (HP +30, Speed +3, Power +25%)는 임의 값이다. 적 외형은 색과 크기만 다르다 (`EnemyAI.ApplyLook`). 나중에 모델을 바꾼다.
 - 웨이브 스포너와 적의 포탄 공격은 Play에서 확인하지 못했다. 적이 실제로 걸어가는지, 포탄이 포구에서 나가 플레이어에 맞는지, 사거리와 조준 보정이 적당한지 봐야 한다. `EnemyTank`의 `NavMeshAgent` 반지름이 1.5라서 베이크 기본값 (0.5)과 다르다. 적이 막히면 이 값을 확인한다.
 - 포탄 모델은 아직 임시다. 3종 모두 메시 없이 궤적 (`TrailRenderer`)만 있다. 탱크 포탄 모델을 받으면 `Shell_*.prefab`에 자식으로 붙이면 된다. 탄 정보 패널의 아이콘은 `Info` 하나이고 `ShellType.icon`은 비어 있다.
 - HUD 레이아웃, 폭발 이펙트의 실제 움직임, ESC 일시정지, 고속탄이 지형에서 터지는 위치는 Play에서 확인하지 못했다. 이펙트 모양은 편집 모드에서 카메라로 렌더링해서 확인했다.
