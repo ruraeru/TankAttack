@@ -12,7 +12,11 @@ public class GameManager : MonoBehaviour
 
     void Awake()
     {
-        if (instance == null) instance = this;
+        if (instance == null)
+        {
+            instance = this;
+            ScoreBoard.Reset();
+        }
         else Destroy(gameObject);
     }
 
@@ -23,13 +27,16 @@ public class GameManager : MonoBehaviour
 
     public void OnPlayerDead()
     {
+        ScoreBoard.Commit(false);
         ChangeScene("Ending_Lose");
     }
 
     public void OnWaveClear()
     {
+        ScoreBoard.Add(200 * currentWave);
         if (currentWave >= maxWave)
         {
+            ScoreBoard.Commit(true);
             ChangeScene("Ending_Win");
         }
         else

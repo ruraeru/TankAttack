@@ -129,6 +129,7 @@ public class EnemyAI : MonoBehaviour
     {
         if (dead) return;
         dead = true;
+        ScoreBoard.Add(ScoreBoard.KillPoints(enemyType));
         Cannon c = shellPrefab != null ? shellPrefab.GetComponent<Cannon>() : null;
         if (c != null && c.expEffect != null)
             Destroy(Instantiate(c.expEffect, transform.position + Vector3.up * 1.5f, Quaternion.identity), 3.0f);

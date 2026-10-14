@@ -5,6 +5,7 @@ public class WaveHUD : MonoBehaviour
 {
     public Text waveText;
     public Text enemyText;
+    public Text scoreText;
 
     float nextPoll;
     int enemyCount;
@@ -14,6 +15,9 @@ public class WaveHUD : MonoBehaviour
         GameManager gm = GameManager.instance;
         if (gm != null && waveText != null)
             waveText.text = "WAVE " + gm.currentWave + " / " + gm.maxWave;
+
+        if (scoreText != null)
+            scoreText.text = "점수 " + ScoreBoard.Score + "  (최고 " + ScoreBoard.Best + ")";
 
         if (enemyText != null && Time.unscaledTime >= nextPoll)
         {
