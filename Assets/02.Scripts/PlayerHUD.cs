@@ -18,6 +18,19 @@ public class PlayerHUD : MonoBehaviour
 
     void Start()
     {
+        // 플레이어가 동적으로 생성되므로 씬에 저장된 참조(프리팹 에셋 등) 대신 생성된 탱크의 FireCannon을 쓴다
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            FireCannon fc = player.GetComponent<FireCannon>();
+            if (fc != null) fireCannon = fc;
+        }
+        if (fireCannon == null)
+        {
+            enabled = false;
+            return;
+        }
+
         for (int i = 0; i < shellButtons.Length; i++)
         {
             int index = i; // 클로저 캡처용
