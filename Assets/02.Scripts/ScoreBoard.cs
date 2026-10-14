@@ -21,6 +21,12 @@ public static class ScoreBoard
         Score += points;
     }
 
+    public static void ResetBest()
+    {
+        PlayerPrefs.DeleteKey(BestKey);
+        PlayerPrefs.Save();
+    }
+
     public static int KillPoints(EnemyType type)
     {
         switch (type)

@@ -5,6 +5,7 @@ using UnityEngine;
 public class TankInfo : MonoBehaviour
 {
     public string displayName = "Tank";
+    [TextArea] public string description;
     public Sprite icon;
     public int maxHP = 100;
 }

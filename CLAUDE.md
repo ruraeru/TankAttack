@@ -30,9 +30,10 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 
 ## 구조
 
-씬은 `Assets/01.Scenes/`의 `IntroScene` (시작 버튼 UI + 탱크 배경), `MainScene` (게임 씬), `Ending_Win`, `Ending_Lose` 네 개다. 예전 `MapTestScene` 내용을 `MainScene`으로 옮겼고 옛 `MainScene`(옛 탱크 구조)은 없어졌다. Build Settings 순서는 Intro, Main, Ending_Win, Ending_Lose다. 데이터 흐름은 컴포넌트가 서로를 직접 참조하는 단순한 구조이며, 여러 파일을 봐야 보이는 규칙은 다음과 같다.
+씬은 `Assets/01.Scenes/`의 `IntroScene` (메인 메뉴 + 탱크 전시 배경), `MainScene` (게임 씬), `Ending_Win`, `Ending_Lose` 네 개다. 예전 `MapTestScene` 내용을 `MainScene`으로 옮겼고 옛 `MainScene`(옛 탱크 구조)은 없어졌다. Build Settings 순서는 Intro, Main, Ending_Win, Ending_Lose다. 데이터 흐름은 컴포넌트가 서로를 직접 참조하는 단순한 구조이며, 여러 파일을 봐야 보이는 규칙은 다음과 같다.
 
-- **탱크 선택**: Intro의 `StartBtn`이 `TankSelectUI.Open`을 불러 `TankSelectPanel`을 연다. 카드는 `Assets/03.Prefabs/Tanks/TankCatalog.asset` (`TankCatalog`, ScriptableObject)의 탱크마다 `CardTemplate`을 복제해 실행 시 만든다. 고른 번호는 `TankSelection.Index` (`PlayerPrefs` `SelectedTank`)에 저장되고 `PlayerSpawner`가 같은 카탈로그에서 꺼내 생성한다. 시작 HP는 프리팹의 `TankInfo.maxHP`로 `GameManager.playerMaxHP`/`playerHP`를 덮어쓴다. 현재 0번 `Player_TANK` ("Mk.1 전차": HP 150, 속도 15, 포탄 4종), 1번 `Tanks/Player_Tank006` ("T-006 전차": HP 100, 속도 20, 포탄 3종)이다. 공습은 둘 다 같다. Mk.1의 4번 포탄 "미사일"은 `Assets/03.Prefabs/Shells/Shell_Missile.prefab` (`AirMissile` 복사본, 중력 없음, 직선 비행, 피해 80, 반경 7m, 쿨다운 3초, 이펙트 1.6배)이다. 포탄 선택 키는 `FireCannon.shells` 개수만큼 1~9가 동작하고, HUD `ShellBar`에는 버튼 4개가 있어 `PlayerHUD.Start`가 포탄 수만큼만 켜고 가운데 정렬한다. 포탄을 5종 이상으로 늘리면 HUD 버튼도 추가해야 한다.
+- **Intro (`IntroScene`)**: 캔버스는 Scale With Screen Size 1920×1080이다. `IntroMenu` (Canvas)가 `MainMenu` (제목, 출격/조작법/설정/종료 버튼, 최고 기록), `ControlsPanel`, `SettingsPanel` (볼륨 슬라이더, 최고 기록 초기화), `TankSelectPanel`을 하나씩만 연다. ESC는 메인으로 돌아간다. 배경은 `Showcase` (`IntroShowcase`)가 고른 탱크 프리팹을 `Spot`에 세우고 조작 스크립트를 지운 뒤 포탑만 흔들고, 메인 카메라를 탱크 주위로 돌린다 (`screenShift`로 탱크를 화면 오른쪽에 둔다). 옛 Abrams 탱크와 카메라 `SmoothFollow`는 지웠다. 볼륨은 `GameSettings` (`PlayerPrefs` `MasterVolume`)가 게임 시작 때 `AudioListener.volume`에 적용한다. 버튼 아이콘은 `Game GUI Vol1/WoodenBlocks/PNG`를 올리브색으로 바꾼 `Assets/04.Images/UI/Mil_*.png`다 (색조 0.185, 채도 ×0.385, 명도 ×0.69, 채도 0.15 미만 픽셀은 그대로). Overlay UI 확인은 캔버스를 임시로 Screen Space Camera로 바꿔 `Camera.Render`로 PNG를 찍고, 씬을 저장하지 않고 다시 연다.
+- **탱크 선택**: Intro의 출격 버튼이 `IntroMenu.OpenTankSelect` → `TankSelectUI.Open`으로 `TankSelectPanel`을 연다. 카드를 누르면 정보 패널 (이름, `TankInfo.description`, HP/속도/화력 막대, 포탄 목록)과 배경 전시 탱크가 바뀌고, 출격 버튼 (`TankSelectUI.StartGame`)이 선택을 저장하고 `MainScene`을 연다. 화력은 가장 센 포탄의 피해량이다. 카드는 `Assets/03.Prefabs/Tanks/TankCatalog.asset` (`TankCatalog`, ScriptableObject)의 탱크마다 `CardTemplate`을 복제해 실행 시 만든다. 고른 번호는 `TankSelection.Index` (`PlayerPrefs` `SelectedTank`)에 저장되고 `PlayerSpawner`가 같은 카탈로그에서 꺼내 생성한다. 시작 HP는 프리팹의 `TankInfo.maxHP`로 `GameManager.playerMaxHP`/`playerHP`를 덮어쓴다. 현재 0번 `Player_TANK` ("Mk.1 전차": HP 150, 속도 15, 포탄 4종), 1번 `Tanks/Player_Tank006` ("T-006 전차": HP 100, 속도 20, 포탄 3종)이다. 공습은 둘 다 같다. Mk.1의 4번 포탄 "미사일"은 `Assets/03.Prefabs/Shells/Shell_Missile.prefab` (`AirMissile` 복사본, 중력 없음, 직선 비행, 피해 80, 반경 7m, 쿨다운 3초, 이펙트 1.6배)이다. 포탄 선택 키는 `FireCannon.shells` 개수만큼 1~9가 동작하고, HUD `ShellBar`에는 버튼 4개가 있어 `PlayerHUD.Start`가 포탄 수만큼만 켜고 가운데 정렬한다. 포탄을 5종 이상으로 늘리면 HUD 버튼도 추가해야 한다.
   - 새 탱크 추가: 프리팹 루트에 `Rigidbody` (질량 2000, constraints 80), `BoxCollider`, `TankMove`, `FireCannon` (`firePos` 연결), `AudioSource`, `AirStrike`, `TankInfo`, 태그 `Player`를 두고, 포탑에 `TurretCtrl`, 포신에 `CannonCtrl`, 포구 `FirePos`, 루트 아래 `CamPivot`을 만든 뒤 카탈로그에 넣는다. 기존 프리팹 값은 `EditorUtility.CopySerialized`로 복사하면 된다. 카드 아이콘은 임시 카메라로 프리팹을 렌더링한 PNG (`Assets/04.Images/UI/Tank_*.png`)를 `TankInfo.icon`에 넣는다.
   - `Player_Tank006`: `ithappy` `Tank_006`을 풀어서 `Model`로 1.5배 키웠다 (포신 포함 길이 약 18m). `Tank_tower_006`에 `TurretCtrl`, `Tank_gun_006`에 `CannonCtrl`이 바로 붙어 있다 (모델 피벗이 회전 중심이라 피벗 오브젝트가 없다). 궤도 스크롤과 바퀴 회전은 없다.
 - **플레이어 탱크 (`MainScene`)**: 씬에 미리 두지 않는다. `PlayerSpawner`가 게임 시작 때 (`Awake`) 카탈로그에서 고른 탱크 (기본 0번 `Assets/03.Prefabs/Player_TANK.prefab`)를 `AllyBase/Markers/PlayerSpawn`에 만들고 카메라 `SmoothFollow` 대상을 `CamPivot`으로 건다. 씬 오브젝트가 탱크를 직접 참조하면 안 되고 `Player` 태그로 찾는다 (`PlayerHUD`는 `Start`에서 찾는다). 프리팹의 루트 `Tank`에 `Rigidbody`, `BoxCollider`, `TankMove`, `FireCannon`, `AudioSource`가 붙고 태그는 `Player`다. 그 아래 `Tank/Tank` (프리팹 연결을 푼 모델)에 `Body`, `Chain`, `TurretPivot`이 있다. `TurretPivot`(`TurretCtrl`, 마우스 방향 포탑 회전) 아래에 `Head`와 `CannonPivot`(`CannonCtrl`, 마우스 휠로 포신 각도 -8~25도 제한)이 있고, `CannonPivot` 아래에 `Canon`과 `FirePos`(포구, `FireCannon.firePos`)가 있다. 카메라는 `SmoothFollow`로 `Tank/CamPivot`을 따라간다. 포탑과 포신이 같이 돌도록 `Head`와 `Canon`은 반드시 이 피벗들의 자식이어야 한다.
@@ -62,7 +63,7 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 - `LowPolyMiliteryVehicles`: 플레이어 탱크 모델 (`Tank.prefab`을 풀어서 사용). Built-in `Standard` 셰이더.
 - `ithappy/Military_Free`: 건물, 소품, 차량. URP 기준으로 배포되어서 `Render_Pipeline_Convert/Unity_6_Built-In_source.unitypackage`를 임포트해 머티리얼을 `Standard`로 바꿨다. 이 폴더의 프리팹에는 콜라이더가 없다. 배치할 때 직접 붙여야 한다.
 - `TerrainSampleAssets`: Unity 공식 팩이다. **TerrainLayer 텍스처만 쓴다.** 풀, 덤불 프리팹과 머티리얼 (`Shader Graphs/TerrainGrass`)은 URP/HDRP 전용이라 Built-in에서 분홍색으로 깨진다. 쓰지 않는다. 폴더가 1.9GB다 (대부분 `Textures/*.tif`).
-- `Game GUI Vol1`: UI 스프라이트 (4개 테마, 아이콘만 있고 패널/바 틀은 없다). `MainScene` HUD에 `WoodenBlocks` 테마를 썼다. 주황 아이콘을 올리브색으로 색조 변환한 복사본이 `Assets/04.Images/UI/Mil_*.png`다 (`Play`, `Restart`, `Home`, `Pause`, `Trophy`, `Info`, `Plus`). Intro 씬에는 아직 적용하지 않았다.
+- `Game GUI Vol1`: UI 스프라이트 (4개 테마, 아이콘만 있고 패널/바 틀은 없다). `MainScene` HUD와 Intro에 `WoodenBlocks` 테마를 썼다. 주황 아이콘을 올리브색으로 색조 변환한 복사본이 `Assets/04.Images/UI/Mil_*.png`다 (`Play`, `Restart`, `Home`, `Pause`, `Trophy`, `Info`, `Plus`, `Settings`, `SoundON`, `Cancel`, `LeftArrow`, `Yes`, `Star`).
 - `UnityTechnologies/ParticlePack` (Unity 공식 Particle Pack): 약 200MB이고 머티리얼이 URP 셰이더다. 쓰는 이펙트와 텍스처는 `Assets/03.Prefabs/ExplosionFX`로 변환해 두었고, 팩 폴더는 `.gitignore`로 올리지 않는다 (지워도 된다).
 - `Inguz Media Studio/Free 2D Impact FX`: 2D용이라 쓰지 않는다. 지워도 된다.
 - `Low Poly Powerups` (Asset Store, 무료): 아이템 모델. `Assets/03.Prefabs/Items/Item_HP/Speed/Power.prefab`이 `1 Builtin` 프리팹의 `Health`, `Speed`, `Damage` 모델을 3배로 키워 쓴다. `Multiattack`, `Shield` 모델은 아직 안 쓴다. `2 URP` 폴더는 쓰지 않는다.
@@ -84,14 +85,11 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 
 과제 조건 (Intro 씬, 게임 구현, Ending 씬) 대비 현재 상태다.
 
-- 완료: 평지와 산이 섞인 지형, 플레이어 탱크 이동/포탑/포신(각도 제한)/발사/궤도, 포탄 3종 (키 1~3, 궤적과 폭발 이펙트가 서로 다름), 적 AI 3종 스펙 (`EnemyAI`, 포탄 공격과 사망 포함), 웨이브 스포너, 아이템 HP/Speed, 아군/적 기지, 무료 에셋 적용, NavMesh 베이크, `MainScene` HUD (HP, 포탄 선택, 탄 정보, 웨이브/적 수, 일시정지 메뉴, 밀리터리 색).
-- 다음 순서 (한 판이 끝까지 돌게 하려면 위에서부터):
-  1. (완료) NavMesh. 적이 실제로 걷는지는 2번과 함께 Play에서 확인한다.
-  2. (완료, Play 확인 전) 웨이브 스포너와 적 포탄 공격. 적은 플레이어 탱크를 향해 진격한다 (아군 기지가 목표는 아니다).
-  3. `Ending_Win`, `Ending_Lose` 씬을 만들고 Build Settings에 `IntroScene`, 게임 씬, 엔딩 2개를 등록한다. Intro 버튼의 대상 씬을 최종 게임 씬으로 바꾼다. Intro에 조작법 설명이 있는지 확인한다.
-  4. 적 탱크 외형 2종 이상 (`ithappy`의 `Tank_006` 등), `Item`의 `Power` 분기, HP 상한, 적 사망 시 아이템 드롭, `Low Poly Powerups` 임포트.
-  5. 플레이어 탱크 종류 다양화 (속도, HP, 연사), 추가 기능 1개 (점수와 최고 기록, `PlayerPrefs` 추천), `Game GUI Vol1`을 Intro 버튼에 적용 (HUD는 적용 완료).
-  6. 마무리: 차체 경사 기울기 (선택), 전체 플레이 테스트, Build 확인.
+- 완료: 평지와 산이 섞인 지형, 플레이어 탱크 이동/포탑/포신(각도 제한)/발사/궤도, 포탄 (키 1~4, 탱크별 3~4종), 적 AI 3종 (포탄 공격, 사망, 종류별 색과 크기), 웨이브 스포너, NavMesh, 필드 아이템 3종 (HP 상한, Power 포함), 아군/적 기지, HUD, 점수와 최고 기록, 엔딩 씬 2개와 Build Settings, 플레이어 동적 생성, G키 공습, 탱크 선택 2종과 탱크별 스펙, Intro 메인 메뉴 (조작법, 설정, 탱크 선택, 전시 배경).
+- 다음 할 일:
+  1. 적 탱크 외형을 모델로 구분 (지금은 색과 크기만 다르다).
+  2. 엔딩 씬 꾸미기 (지금은 코드로 만든 단색 배경 UI).
+  3. 마무리: 차체 경사 기울기 (선택), 전체 플레이 테스트, Build 확인.
 
 ## 작업 방식
 
