@@ -50,9 +50,9 @@ public class FireCannon : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Alpha1)) SelectShell(0);
-        if (Input.GetKeyDown(KeyCode.Alpha2)) SelectShell(1);
-        if (Input.GetKeyDown(KeyCode.Alpha3)) SelectShell(2);
+        // 숫자 키 1~9로 포탄 선택 (탱크마다 포탄 수가 다르다)
+        for (int i = 0; i < shells.Length && i < 9; i++)
+            if (Input.GetKeyDown(KeyCode.Alpha1 + i)) SelectShell(i);
 
         if (Input.GetMouseButtonDown(0) && !(EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()))
         {

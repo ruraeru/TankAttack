@@ -9,6 +9,7 @@ public class PlayerHUD : MonoBehaviour
     public Button[] shellButtons;
     public Image[] cooldownOverlays;
     public Text shellInfoText;
+    public float buttonSpacing = 185f;
     public Image shellIcon;
     public Image airStrikeFill; // Su57 아이콘 (쿨다운이 지날수록 아래에서 차오른다)
     public Text airStrikeTime;
@@ -36,8 +37,16 @@ public class PlayerHUD : MonoBehaviour
             return;
         }
 
+        // 탱크마다 포탄 수가 달라서, 있는 포탄만큼 버튼을 켜고 가운데 정렬한다
+        int count = Mathf.Min(shellButtons.Length, fireCannon.shells.Length);
         for (int i = 0; i < shellButtons.Length; i++)
         {
+            bool used = i < count;
+            shellButtons[i].gameObject.SetActive(used);
+            if (!used) continue;
+            RectTransform rt = (RectTransform)shellButtons[i].transform;
+            rt.anchoredPosition = new Vector2((i - (count - 1) * 0.5f) * buttonSpacing, rt.anchoredPosition.y);
+
             int index = i; // 클로저 캡처용
             shellButtons[i].onClick.AddListener(() => fireCannon.SelectShell(index));
             Text label = shellButtons[i].GetComponentInChildren<Text>();
@@ -67,7 +76,7 @@ public class PlayerHUD : MonoBehaviour
             if (airStrikeTime != null) airStrikeTime.text = ready ? "G" : Mathf.CeilToInt(airStrike.RemainingTime).ToString();
         }
 
-        for (int i = 0; i < shellButtons.Length; i++)
+        for (int i = 0; i < shellButtons.Length && i < fireCannon.shells.Length; i++)
         {
             bool selected = i == fireCannon.CurrentIndex;
             shellButtons[i].image.color = selected ? selectedColor : normalColor;
