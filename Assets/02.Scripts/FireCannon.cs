@@ -24,6 +24,7 @@ public class FireCannon : MonoBehaviour
         new ShellType { name = "고속탄", speed = 12000f, damage = 15f, blastRadius = 1.5f, cooldown = 0.4f },
         new ShellType { name = "중포탄", speed = 4000f, damage = 60f, blastRadius = 6f, cooldown = 2f },
     };
+    public float damageMultiplier = 1f; // Power 아이템이 올린다
     public int CurrentIndex { get; private set; }
     public ShellType Current => shells[CurrentIndex];
     public float CooldownRatio
@@ -76,7 +77,7 @@ public class FireCannon : MonoBehaviour
         Cannon c = obj.GetComponent<Cannon>();
         if (Current.explosionPrefab != null) c.expEffect = Current.explosionPrefab;
         c.speed = Current.speed;
-        c.damage = Current.damage;
+        c.damage = Current.damage * damageMultiplier;
         c.blastRadius = Current.blastRadius;
     }
 }

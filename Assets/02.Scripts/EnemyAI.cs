@@ -31,6 +31,7 @@ public class EnemyAI : MonoBehaviour
             hp = 50f;
             attackRange = 70f;
             damage = 8;
+            ApplyLook(new Color(1f, 0.85f, 0.35f), 0.85f);
         }
         else if (enemyType == EnemyType.Heavy)
         {
@@ -38,6 +39,7 @@ public class EnemyAI : MonoBehaviour
             hp = 120f;
             attackRange = 110f;
             damage = 25;
+            ApplyLook(new Color(0.75f, 0.3f, 0.3f), 1.2f);
         }
         else // Normal
         {
@@ -45,7 +47,17 @@ public class EnemyAI : MonoBehaviour
             hp = 100f;
             attackRange = 90f;
             damage = 10;
+            ApplyLook(new Color(0.6f, 0.75f, 0.6f), 1f);
         }
+    }
+
+    // 종류별 색과 크기. 콜라이더와 NavMeshAgent도 같이 커진다.
+    void ApplyLook(Color tint, float scale)
+    {
+        transform.localScale *= scale;
+        foreach (Renderer r in GetComponentsInChildren<Renderer>())
+            foreach (Material m in r.materials)
+                if (m.HasProperty("_Color")) m.color = m.color * tint;
     }
 
     void Update()
