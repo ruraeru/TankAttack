@@ -37,7 +37,10 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
   - 새 탱크 추가: 프리팹 루트에 `Rigidbody` (질량 2000, constraints 80), `BoxCollider`, `TankMove`, `FireCannon` (`firePos` 연결), `AudioSource`, `AirStrike`, `TankInfo`, 태그 `Player`를 두고, 포탑에 `TurretCtrl`, 포신에 `CannonCtrl`, 포구 `FirePos`, 루트 아래 `CamPivot`을 만든 뒤 카탈로그에 넣는다. 기존 프리팹 값은 `EditorUtility.CopySerialized`로 복사하면 된다. 카드 아이콘은 임시 카메라로 프리팹을 렌더링한 PNG (`Assets/04.Images/UI/Tank_*.png`)를 `TankInfo.icon`에 넣는다.
   - `Player_Tank006`: `ithappy` `Tank_006`을 풀어서 `Model`로 1.5배 키웠다 (포신 포함 길이 약 18m). `Tank_tower_006`에 `TurretCtrl`, `Tank_gun_006`에 `CannonCtrl`이 바로 붙어 있다 (모델 피벗이 회전 중심이라 피벗 오브젝트가 없다). 궤도 스크롤과 바퀴 회전은 없다.
 - **플레이어 탱크 (`MainScene`)**: 씬에 미리 두지 않는다. `PlayerSpawner`가 게임 시작 때 (`Awake`) 카탈로그에서 고른 탱크 (기본 0번 `Assets/03.Prefabs/Player_TANK.prefab`)를 `AllyBase/Markers/PlayerSpawn`에 만들고 카메라 `SmoothFollow` 대상을 `CamPivot`으로 건다. 씬 오브젝트가 탱크를 직접 참조하면 안 되고 `Player` 태그로 찾는다 (`PlayerHUD`는 `Start`에서 찾는다). 프리팹의 루트 `Tank`에 `Rigidbody`, `BoxCollider`, `TankMove`, `FireCannon`, `AudioSource`가 붙고 태그는 `Player`다. 그 아래 `Tank/Tank` (프리팹 연결을 푼 모델)에 `Body`, `Chain`, `TurretPivot`이 있다. `TurretPivot`(`TurretCtrl`, 마우스 방향 포탑 회전) 아래에 `Head`와 `CannonPivot`(`CannonCtrl`, 마우스 휠로 포신 각도 -8~25도 제한)이 있고, `CannonPivot` 아래에 `Canon`과 `FirePos`(포구, `FireCannon.firePos`)가 있다. 카메라는 `SmoothFollow`로 `Tank/CamPivot`을 따라간다. 포탑과 포신이 같이 돌도록 `Head`와 `Canon`은 반드시 이 피벗들의 자식이어야 한다.
-- **이동 (`TankMove`)**: 지형과의 물리 충돌을 끄고 (`Physics.IgnoreCollision`, 중력도 끔) 코드가 `Terrain.SampleHeight`로 지면 높이를 따라간다. 수평 속도는 평지든 경사든 항상 `moveSpeed`다. 지형 가장자리 `edgeMargin` 안쪽까지만 간다. 지형 충돌에 맡기면 박스 콜라이더가 울퉁불퉁한 지면에 걸쳐 뜨고, 능선에서 상승 속도로 날아가고, 경사 제한을 두면 경사 근처에서 멈춘다. 건물과 적과의 충돌은 그대로다.
+- **이동 (`TankMove`)**: 지형과의 물리 충돌을 끄고 (`Physics.IgnoreCollision`, 중력도 끔) 코드가 `Terrain.SampleHeight`로 지면 높이를 따라간다. 수평 속도는 평지든 경사든 항상 `moveSpeed`다. Shift를 누른 채 앞뒤로 움직이면 속도 배율 `Boost`가 `boostAccelTime`(1.2초) 동안 `boostMultiplier`(1.7배)까지 오르고, 떼면 `boostReleaseTime`(0.6초) 동안 1로 돌아온다. 아이템 Speed는 `moveSpeed`를 올리므로 가속 배율과 곱해진다. HUD의 `BoostBar` (Su57 아이콘 오른쪽, HP 바 복사본)가 가속 배율과 현재 수평 속도를 보여 준다 (`PlayerHUD.boostFill`, `boostText`). 지형 가장자리 `edgeMargin` 안쪽까지만 간다. 지형 충돌에 맡기면 박스 콜라이더가 울퉁불퉁한 지면에 걸쳐 뜨고, 능선에서 상승 속도로 날아가고, 경사 제한을 두면 경사 근처에서 멈춘다. 건물과 적과의 충돌은 그대로다.
+- **차체 기울기 (`HullTilt`)**: 플레이어 탱크 프리팹 루트에 붙어 있다. 차체 앞뒤와 좌우 지면 높이를 샘플링해 보이는 모델 자식 (`Player_TANK`는 `Tank`, `Player_Tank006`은 `Model`)만 pitch/roll로 기울인다. 루트와 콜라이더, 카메라 피벗은 기울지 않는다 (Rigidbody X/Z 회전이 막혀 있고 `TankMove`가 Y 회전만 한다). 적 탱크에는 없다.
+- **바퀴 (`WheelSpin`)**: `Player_Tank006`의 좌우 바퀴 8개씩을 `Rigidbody` 속도에 맞춰 굴린다. 제자리 회전 때는 좌우가 반대로 돈다. 궤도 메시 텍스처 스크롤은 없다.
+- **웨이브 안내**: `WaveSpawner`가 웨이브 시작 때 `WAVE N` (마지막은 `최종 WAVE N`), 클리어 때 `WAVE N 클리어!`를 `WaveHUD.ShowBanner`로 띄운다. `HUDCanvas/WaveBanner` 텍스트가 2.5초 동안 나타났다 사라진다.
 - **궤도 (`TrackScroll`)**: `Chain` 메시의 UV가 한 점에 몰려 있어서 텍스처 스크롤이 안 보인다. 그래서 `Assets/05.Models/ChainTread.asset`(UV를 탱크 앞뒤 방향으로 다시 투영한 복사본)과 `Assets/04.Images/TrackTread.mat`를 `Chain`에 씌우고, `TrackScroll`이 `Rigidbody` 속도에 맞춰 오프셋을 흘린다. 옛 `TankAnim`은 옛 `MainScene`용이라 지금은 쓰지 않는다.
 - **포탄 발사**: `FireCannon`은 `Resources.Load("Cannon")`과 `Resources.Load<AudioClip>("CannonFire")`로 에셋을 이름으로 불러온다. 그래서 `Assets/Resources/Cannon.prefab`, `CannonFire.wav`의 이름과 위치를 바꾸면 안 된다. 포탄 프리팹은 `Cannon.cs`가 `Start`에서 `AddForce`로 날리고, 트리거 충돌이나 3초 후에 폭발 이펙트를 만든다.
   - 포탄 3종은 `FireCannon.shells` (`ShellType`)에 있다. 각 항목의 `shellPrefab`, `explosionPrefab`, `icon`이 비어 있으면 `Resources/Cannon`과 포탄 프리팹의 `expEffect`를 쓴다. 현재 `Assets/03.Prefabs/Shells/Shell_Normal/Fast/Heavy.prefab` (궤적 색, 두께, 충돌 반경만 다르다)과 `Assets/03.Prefabs/ExplosionFX/FX_Normal/Fast/Heavy.prefab`을 연결해 두었다.
@@ -89,7 +92,7 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 - 다음 할 일:
   1. 적 탱크 외형을 모델로 구분 (지금은 색과 크기만 다르다).
   2. 엔딩 씬 꾸미기 (지금은 코드로 만든 단색 배경 UI).
-  3. 마무리: 차체 경사 기울기 (선택), 전체 플레이 테스트, Build 확인.
+  3. 마무리: 전체 플레이 테스트, Build 확인.
 
 ## 작업 방식
 

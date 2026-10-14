@@ -13,12 +13,18 @@ public class PlayerHUD : MonoBehaviour
     public Image shellIcon;
     public Image airStrikeFill; // Su57 아이콘 (쿨다운이 지날수록 아래에서 차오른다)
     public Text airStrikeTime;
+    public Image boostFill;     // Shift 가속 게이지 (가속 배율이 오른 만큼 찬다)
+    public Text boostText;
 
     AirStrike airStrike;
+    TankMove tankMove;
+    Rigidbody playerBody;
 
     static readonly Color selectedColor = new Color(0.95f, 0.75f, 0.2f, 1f);
     static readonly Color normalColor = new Color(0.62f, 0.58f, 0.4f, 1f);
     static readonly Color hpHighColor = new Color(0.45f, 0.62f, 0.25f, 1f);
+    static readonly Color boostLowColor = new Color(0.95f, 0.75f, 0.2f, 1f);
+    static readonly Color boostHighColor = new Color(0.95f, 0.35f, 0.1f, 1f);
     static readonly Color hpLowColor = new Color(0.8f, 0.2f, 0.15f, 1f);
 
     void Start()
@@ -30,6 +36,8 @@ public class PlayerHUD : MonoBehaviour
             FireCannon fc = player.GetComponent<FireCannon>();
             if (fc != null) fireCannon = fc;
             airStrike = player.GetComponent<AirStrike>();
+            tankMove = player.GetComponent<TankMove>();
+            playerBody = player.GetComponent<Rigidbody>();
         }
         if (fireCannon == null)
         {
@@ -74,6 +82,22 @@ public class PlayerHUD : MonoBehaviour
                 airStrikeFill.color = ready ? Color.white : new Color(0.75f, 0.75f, 0.75f, 1f);
             }
             if (airStrikeTime != null) airStrikeTime.text = ready ? "G" : Mathf.CeilToInt(airStrike.RemainingTime).ToString();
+        }
+
+        if (tankMove != null)
+        {
+            float range = tankMove.boostMultiplier - 1f;
+            float boost = range > 0f ? Mathf.Clamp01((tankMove.Boost - 1f) / range) : 0f;
+            if (boostFill != null)
+            {
+                boostFill.fillAmount = boost;
+                boostFill.color = Color.Lerp(boostLowColor, boostHighColor, boost);
+            }
+            if (boostText != null)
+            {
+                int speed = playerBody != null ? Mathf.RoundToInt(new Vector3(playerBody.linearVelocity.x, 0f, playerBody.linearVelocity.z).magnitude) : 0;
+                boostText.text = (boost > 0.01f ? "가속 x" + tankMove.Boost.ToString("0.0") : "가속 [Shift]") + "    속도 " + speed;
+            }
         }
 
         for (int i = 0; i < shellButtons.Length && i < fireCannon.shells.Length; i++)

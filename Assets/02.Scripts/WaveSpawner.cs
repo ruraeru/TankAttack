@@ -14,18 +14,23 @@ public class WaveSpawner : MonoBehaviour
 
     readonly List<EnemyAI> alive = new List<EnemyAI>();
     bool spawning;
+    WaveHUD hud;
 
     IEnumerator Start()
     {
+        hud = FindAnyObjectByType<WaveHUD>();
         yield return new WaitForSeconds(waveDelay);
         while (GameManager.instance != null)
         {
+            int current = GameManager.instance.currentWave;
+            if (hud != null) hud.ShowBanner(current >= GameManager.instance.maxWave ? "최종 WAVE " + current : "WAVE " + current);
             yield return SpawnWave(GameManager.instance.currentWave);
 
             while (alive.Exists(e => e != null)) yield return new WaitForSeconds(0.5f);
             alive.Clear();
 
             int wave = GameManager.instance.currentWave;
+            if (hud != null && wave < GameManager.instance.maxWave) hud.ShowBanner("WAVE " + wave + " 클리어!");
             GameManager.instance.OnWaveClear();
             if (wave >= GameManager.instance.maxWave) yield break;
             yield return new WaitForSeconds(waveDelay);
