@@ -7,7 +7,7 @@ using UnityEngine.UI;
 public class EndingUI : MonoBehaviour
 {
     public bool win;
-    public string gameSceneName = "MapTestScene";
+    public string gameSceneName = "MainScene";
     public string introSceneName = "IntroScene";
 
     static readonly Color Olive = new Color(0.33f, 0.38f, 0.2f, 1f);
