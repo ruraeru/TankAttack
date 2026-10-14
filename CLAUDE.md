@@ -25,6 +25,7 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 - Unity 6.5에서는 `Object.GetInstanceID()` (CS0619), `FindFirstObjectByType`, `FindObjectsByType(FindObjectsSortMode.None)`이 막히거나 deprecated다. `FindAnyObjectByType`, `FindObjectsByType<T>()`를 쓴다.
 - `ProjectSettings/NavMeshAreas.asset`의 에이전트 설정은 `NavMesh.GetSettingsByID(0)`가 구조체 복사본이라 값을 바꿔도 저장되지 않는다. `SerializedObject`로 `m_Settings`를 고친다.
 - `RunCommand` 실행 중 `AssetDatabase.SaveAssets()`나 `Refresh()`가 구버전 `ProjectSettings/*.asset` 경고를 쏟아내서 응답이 `UNEXPECTED_ERROR`로 오지만, 로그에 `[Log]` 결과가 있으면 실행은 성공한 것이다.
+- 코드로 PNG를 저장하고 `textureType = Sprite`만 지정하면 `spriteImportMode`가 `Multiple`로 남아 Sprite 하위 에셋이 생기지 않는다 (`LoadAssetAtPath<Sprite>`가 null). `spriteImportMode = SpriteImportMode.Single`도 같이 지정한다.
 - 콘솔의 `Serialized files [version N] before 2019.1 are deprecated` 경고는 `ProjectSettings/*.asset`이 오래된 포맷이라 생기는 것이며 무시해도 된다.
 
 ## 구조
@@ -38,6 +39,7 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
   - 포탄 3종은 `FireCannon.shells` (`ShellType`)에 있다. 각 항목의 `shellPrefab`, `explosionPrefab`, `icon`이 비어 있으면 `Resources/Cannon`과 포탄 프리팹의 `expEffect`를 쓴다. 현재 `Assets/03.Prefabs/Shells/Shell_Normal/Fast/Heavy.prefab` (궤적 색, 두께, 충돌 반경만 다르다)과 `Assets/03.Prefabs/ExplosionFX/FX_Normal/Fast/Heavy.prefab`을 연결해 두었다.
   - 속도 6000~12000인 `AddForce`로 날리면 한 스텝에 최대 4.8m를 가서 지형을 뚫는다. `OnTriggerEnter`는 물리 스텝이 끝난 뒤에 불려서 포탄이 이미 지형 속에 있다. 그래서 `Cannon.cs`는 `FixedUpdate`와 `OnTriggerEnter` 양쪽에서 이전 위치부터 현재 위치까지 `Physics.Raycast`로 표면 지점을 찾고, 폭발은 `Explode(point, normal)` 하나로 모은다. 이펙트는 표면에서 `effectLift`(1m)만큼 띄워서 생성한다. 표면에 놓으면 이펙트 아래 절반이 지형에 가린다. `Player` 태그 충돌체는 레이에서 무시한다.
   - 폭발 이펙트 수명은 3초다 (`Destroy(obj, 3.0f)`). 더 길게 하려면 이 값도 늘린다.
+- **공습 (`AirStrike`)**: `Player_TANK`에 붙어 있다. G를 누르면 마우스가 가리키는 `Terrain` 지점 위로 `Su57`이 카메라 오른쪽 방향으로 지나가며 `AirMissile.prefab` (`Shell_Heavy` 복사본 + `Missle` 모델)을 8발 떨어뜨린다. 미사일은 `Cannon`을 재사용해서 지형 충돌과 폭발과 적 피해를 처리하고, 아래로 `speed`만큼 밀어서 3초 안에 떨어지게 하지만 안전하게 `Cannon.lifetime`을 6초로 둔다. 쿨다운 25초이고 왼쪽 아래 HP 아이콘 위의 `AirStrikeIcon`(`Assets/04.Images/UI/Su57Icon.png`, Su57을 위에서 렌더링한 PNG)이 아래에서 차오르며 표시하고 중앙에 남은 초 (준비되면 `G`)가 나온다. 미사일은 모델 3배, 폭발 반경 16m, 폭발 이펙트 2.5배 (`Cannon.effectScale`)다. `AirStrike` 값은 `Player_TANK` 프리팹에 저장되므로 코드 기본값만 바꾸면 반영되지 않는다. `Su57`은 +z가 기수이고 모델이 피벗보다 3.9m 위에 그려져서 `planeHeightOffset`으로 보정한다. 수치는 모두 임의 값이다.
 - **레이어**: `TurretCtrl`은 레이어 8 (`Terrain`)에만 레이캐스트한다 (`1 << 8`). 지형 레이어를 바꾸면 포탑 조준이 멈춘다.
 - **태그**: `Player` 태그를 `EnemyAI`와 `Item`이 사용한다. 플레이어 `Tank`에 이 태그가 있어야 한다.
 - **GameManager**: `GameManager.instance` 싱글턴이 `playerHP`, 웨이브 진행, 씬 전환을 가진다. 씬 전환은 이름 문자열로 한다. `MainScene`에도 `GameManager` 오브젝트를 넣었다.

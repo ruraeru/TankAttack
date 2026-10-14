@@ -10,6 +10,10 @@ public class PlayerHUD : MonoBehaviour
     public Image[] cooldownOverlays;
     public Text shellInfoText;
     public Image shellIcon;
+    public Image airStrikeFill; // Su57 아이콘 (쿨다운이 지날수록 아래에서 차오른다)
+    public Text airStrikeTime;
+
+    AirStrike airStrike;
 
     static readonly Color selectedColor = new Color(0.95f, 0.75f, 0.2f, 1f);
     static readonly Color normalColor = new Color(0.62f, 0.58f, 0.4f, 1f);
@@ -24,6 +28,7 @@ public class PlayerHUD : MonoBehaviour
         {
             FireCannon fc = player.GetComponent<FireCannon>();
             if (fc != null) fireCannon = fc;
+            airStrike = player.GetComponent<AirStrike>();
         }
         if (fireCannon == null)
         {
@@ -49,6 +54,17 @@ public class PlayerHUD : MonoBehaviour
             hpFill.fillAmount = Mathf.Clamp01(ratio);
             hpFill.color = Color.Lerp(hpLowColor, hpHighColor, Mathf.Clamp01(ratio * 2f)); // 절반 이하부터 붉게
             hpText.text = "HP " + gm.playerHP + " / " + gm.playerMaxHP;
+        }
+
+        if (airStrike != null)
+        {
+            bool ready = airStrike.RemainingTime <= 0f;
+            if (airStrikeFill != null)
+            {
+                airStrikeFill.fillAmount = 1f - airStrike.CooldownRatio;
+                airStrikeFill.color = ready ? Color.white : new Color(0.75f, 0.75f, 0.75f, 1f);
+            }
+            if (airStrikeTime != null) airStrikeTime.text = ready ? "G" : Mathf.CeilToInt(airStrike.RemainingTime).ToString();
         }
 
         for (int i = 0; i < shellButtons.Length; i++)
