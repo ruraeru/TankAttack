@@ -14,6 +14,7 @@ public class EndingUI : MonoBehaviour
     public Sprite retryIcon;
     public Sprite homeIcon;
     public Sprite recordIcon;
+    public Material skybox; // 승리는 밝은 하늘, 패배는 어두운 하늘 (비우면 단색 배경)
 
     static readonly Color Olive = new Color(0.33f, 0.38f, 0.2f, 1f);
     static readonly Color OliveDark = new Color(0.16f, 0.19f, 0.1f, 0.92f);
@@ -32,8 +33,16 @@ public class EndingUI : MonoBehaviour
         Camera cam = Camera.main;
         if (cam != null)
         {
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = win ? new Color(0.08f, 0.11f, 0.07f) : new Color(0.14f, 0.06f, 0.06f);
+            if (skybox != null)
+            {
+                RenderSettings.skybox = skybox;
+                cam.clearFlags = CameraClearFlags.Skybox;
+            }
+            else
+            {
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = win ? new Color(0.08f, 0.11f, 0.07f) : new Color(0.14f, 0.06f, 0.06f);
+            }
         }
 
         if (FindAnyObjectByType<EventSystem>() == null)
@@ -55,7 +64,7 @@ public class EndingUI : MonoBehaviour
         Transform root = canvasObj.transform;
 
         // 가장자리를 어둡게 깔고 가운데 패널을 둔다
-        MakeImage(root, "Dim", null, new Color(0, 0, 0, 0.35f), Vector2.zero, new Vector2(4000, 3000));
+        MakeImage(root, "Dim", null, new Color(0, 0, 0, win ? 0.08f : 0.35f), Vector2.zero, new Vector2(4000, 3000));
         GameObject panel = MakeImage(root, "Panel", null, OliveDark, new Vector2(0, 0), new Vector2(1100, 760)).gameObject;
         panelGroup = panel.AddComponent<CanvasGroup>();
         panelGroup.alpha = 0f;
