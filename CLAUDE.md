@@ -53,6 +53,7 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 - **레이어**: `TurretCtrl`은 레이어 8 (`Terrain`)에만 레이캐스트한다 (`1 << 8`). 지형 레이어를 바꾸면 포탑 조준이 멈춘다.
 - **태그**: `Player` 태그를 `EnemyAI`와 `Item`이 사용한다. 플레이어 `Tank`에 이 태그가 있어야 한다.
 - **GameManager**: `GameManager.instance` 싱글턴이 `playerHP`, 웨이브 진행, 씬 전환을 가진다. 씬 전환은 이름 문자열로 한다. `MainScene`에도 `GameManager` 오브젝트를 넣었다.
+- **엔딩 (`Ending_Win`, `Ending_Lose`)**: 씬마다 `EndingUI` (`win` 플래그) 오브젝트 하나뿐이고 화면은 `Build()`가 `Start`에서 코드로 만든다. 가운데 올리브 패널 (1100×760, 위아래 강조선), 헤더 아이콘, 제목 (88), 부제, 점수 (64, 0에서 올라가는 연출), 최고 기록 (40), `NEW RECORD!` (깜빡임), 버튼 둘 (다시 하기 → `MainScene`, 처음으로 → `IntroScene`)이다. 아이콘은 `headerIcon` (승리 `Mil_Trophy`, 패배 `Mil_Cancel`), `retryIcon` (`Mil_Restart`), `homeIcon` (`Mil_Home`) 필드에 씬에서 직접 연결한다. 점수는 `ScoreBoard` (`PlayerPrefs` `BestScore`)에서 읽는다. 편집 모드에서 `Build()`를 불러 캔버스를 Screen Space Camera로 바꾸고 `CanvasGroup.alpha`를 1로 둔 뒤 `Camera.Render`로 PNG를 찍어 레이아웃을 확인했다 (씬은 저장하지 않고 다시 연다).
 - **NavMesh (`MainScene`)**: `com.unity.ai.navigation` 2.0.16 패키지의 `NavMeshSurface`가 `NavMesh` 오브젝트에 붙어 있고, 데이터는 `Assets/01.Scenes/MainScene/NavMesh-NavMesh.asset`이다. 산이 가팔라서 에이전트 최대 경사를 기본 45°에서 60°로 올렸다 (`ProjectSettings/NavMeshAreas.asset`). 올린 뒤에야 `EnemySpawn_1~4`에서 `PlayerSpawn`까지 `PathComplete`가 나온다. 지형이나 건물을 바꾸면 `NavMeshSurface.BuildNavMesh()`로 다시 굽는다.
 - **HUD (`MainScene`)**: `HUDCanvas` 하나에 `PlayerHUD` (HP 바, 포탄 버튼 3개와 쿨다운, 탄 정보 패널), `WaveHUD` (웨이브, 적 수), `PauseMenu` (ESC, 우상단 `PauseButton`)가 붙어 있다. 레퍼런스 해상도 1920×1080이다. `PauseMenu`는 `Time.timeScale`을 0으로 만들고 씬을 나갈 때 1로 되돌린다. 팩에 패널과 바 틀이 없어서 틀은 Unity 기본 `UISprite`를 올리브 색으로 칠했고, 아이콘만 팩에서 가져왔다.
 - **폭발 이펙트 (`Assets/03.Prefabs/ExplosionFX`)**: Particle Pack의 `SmallExplosion`, `TinyExplosion`, `DustExplosion`을 Built-in용으로 바꾼 독립 복사본이다. 원본 머티리얼이 URP 셰이더라서 그대로는 Built-in에서 깨진다. 머티리얼은 `Legacy Shaders/Particles/Additive`와 `Alpha Blended`로 바꿨고 (`Materials/Mil_*.mat`), 쓰는 텍스처는 `Textures/`로 복사했다. 불꽃은 `ExplosionEmission` 글로우 맵을 쓰고, 불덩이 파티클의 색 곡선이 검정이던 것을 노랑에서 주황으로 바꿨다 (검정에 Additive를 쓰면 안 보인다). `FX_Heavy`에는 `FX_Normal` 복사본 `FireCore`가 들어 있고, `sortingFudge`로 불꽃을 먼지 앞에 그린다. 왜곡(distortion) 이펙트는 뺐다.
@@ -83,9 +84,7 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 
 ## 알려진 미완성 부분
 
-- 엔딩 씬 (`Ending_Win`, `Ending_Lose`)은 `EndingUI` 하나만 있고 화면은 코드로 만든다. 점수와 최고 기록 (`ScoreBoard`, `PlayerPrefs`의 `BestScore`)은 Play에서 끝까지 확인하지 못했다.
 - 필드 아이템은 `ItemSpawner`가 15초 간격으로 최대 5개 만든다. 효과 수치 (HP +30, Speed +3, Power +25%)는 임의 값이다.
-- 새 적 6종과 5웨이브 구성은 Play에서 확인하지 못했다. 헬기가 공중에서 맞는지, 트럭 자폭 거리, 자주포 경고와 착탄, 각 사거리와 난이도를 봐야 한다.
 - 포탄 모델은 아직 임시다. 3종 모두 메시 없이 궤적 (`TrailRenderer`)만 있다. 탱크 포탄 모델을 받으면 `Shell_*.prefab`에 자식으로 붙이면 된다. 탄 정보 패널의 아이콘은 `Info` 하나이고 `ShellType.icon`은 비어 있다.
 - HUD 레이아웃, 폭발 이펙트의 실제 움직임, ESC 일시정지, 고속탄이 지형에서 터지는 위치는 Play에서 확인하지 못했다. 이펙트 모양은 편집 모드에서 카메라로 렌더링해서 확인했다.
 - 적은 `WaveSpawner`가 생성한다. 씬에 미리 배치하지 않는다.
@@ -101,8 +100,7 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 - 완료: 평지와 산이 섞인 지형, 플레이어 탱크 이동/포탑/포신(각도 제한)/발사/궤도, 포탄 (키 1~4, 탱크별 3~4종), 적 AI 3종 (포탄 공격, 사망, 종류별 색과 크기), 웨이브 스포너, NavMesh, 필드 아이템 3종 (HP 상한, Power 포함), 아군/적 기지, HUD, 점수와 최고 기록, 엔딩 씬 2개와 Build Settings, 플레이어 동적 생성, G키 공습, 탱크 선택 2종과 탱크별 스펙, Intro 메인 메뉴 (조작법, 설정, 탱크 선택, 전시 배경).
 - 다음 할 일:
   1. 새 적 6종 밸런스 조정 (Play 확인 후).
-  2. 엔딩 씬 꾸미기 (지금은 코드로 만든 단색 배경 UI).
-  3. 마무리: 전체 플레이 테스트, Build 확인.
+  2. 마무리: 전체 플레이 테스트, Build 확인.
 
 ## 작업 방식
 
