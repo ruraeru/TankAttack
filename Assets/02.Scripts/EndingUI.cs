@@ -63,8 +63,7 @@ public class EndingUI : MonoBehaviour
         canvasObj.AddComponent<GraphicRaycaster>();
         Transform root = canvasObj.transform;
 
-        // 가장자리를 어둡게 깔고 가운데 패널을 둔다
-        MakeImage(root, "Dim", null, new Color(0, 0, 0, win ? 0.08f : 0.35f), Vector2.zero, new Vector2(4000, 3000));
+        // 가운데 패널을 둔다
         GameObject panel = MakeImage(root, "Panel", null, OliveDark, new Vector2(0, 0), new Vector2(1100, 760)).gameObject;
         panelGroup = panel.AddComponent<CanvasGroup>();
         panelGroup.alpha = 0f;

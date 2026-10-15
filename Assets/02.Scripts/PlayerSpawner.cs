@@ -27,6 +27,7 @@ public class PlayerSpawner : MonoBehaviour
 
         Player = Instantiate(prefab, pos, Quaternion.Euler(0f, spawnPoint.eulerAngles.y, 0f));
         Player.name = "Tank";
+        if (Player.GetComponent<AimLaser>() == null) Player.AddComponent<AimLaser>(); // 조준 방향 레이저
 
         TankInfo info = Player.GetComponent<TankInfo>();
         // Awake 순서가 정해져 있지 않아 GameManager.instance가 아직 비어 있을 수 있다
