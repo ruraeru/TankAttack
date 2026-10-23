@@ -90,8 +90,7 @@ public class EnemyAI : MonoBehaviour
 
     void Attack()
     {
-        GameManager gm = GameManager.instance;
-        if (gm == null || gm.playerHP <= 0 || shellPrefab == null) return;
+        if (!CanShoot()) return;
 
         Vector3 muzzle = firePos != null ? firePos.position : transform.position + Vector3.up * 3f + transform.forward * 3f;
         Vector3 aim = playerTarget.position + Vector3.up * 0.5f;
@@ -99,24 +98,29 @@ public class EnemyAI : MonoBehaviour
         Cannon prefabCannon = shellPrefab.GetComponent<Cannon>();
         Rigidbody prefabRb = shellPrefab.GetComponent<Rigidbody>();
         if (prefabCannon != null && prefabRb != null && prefabRb.useGravity)
-        {
-            float v = prefabCannon.speed * Time.fixedDeltaTime / prefabRb.mass;
-            float t = Vector3.Distance(muzzle, aim) / v;
-            aim.y += 0.5f * Mathf.Abs(Physics.gravity.y) * t * t;
-        }
-        GameObject obj = Instantiate(shellPrefab, muzzle, Quaternion.LookRotation(aim - muzzle));
-        Cannon c = obj.GetComponent<Cannon>();
+            aim.y += Cannon.GravityDrop(prefabCannon.speed, prefabRb.mass, Vector3.Distance(muzzle, aim));
+        SpawnShell(muzzle, Quaternion.LookRotation(aim - muzzle));
+        PlayFireSound(muzzle);
+    }
+
+    bool CanShoot()
+    {
+        GameManager gm = GameManager.instance;
+        return gm != null && gm.playerHP > 0 && shellPrefab != null;
+    }
+
+    Cannon SpawnShell(Vector3 muzzle, Quaternion rot)
+    {
+        Cannon c = Instantiate(shellPrefab, muzzle, rot).GetComponent<Cannon>();
         c.fromEnemy = true;
         c.damage = damage;
-
-        PlayFireSound(muzzle);
+        return c;
     }
 
     // 발사각을 고정하고, 목표까지 수평 거리와 높이 차로 필요한 초속을 구해 포물선으로 쏜다
     void FireArtillery()
     {
-        GameManager gm = GameManager.instance;
-        if (gm == null || gm.playerHP <= 0 || shellPrefab == null) return;
+        if (!CanShoot()) return;
 
         Vector3 muzzle = firePos != null ? firePos.position : transform.position + Vector3.up * 4f;
         Vector3 target = playerTarget.position;
@@ -134,13 +138,10 @@ public class EnemyAI : MonoBehaviour
         Vector3 vel = flat.normalized * speed * Mathf.Cos(angle) + Vector3.up * speed * Mathf.Sin(angle);
         float flightTime = d / (speed * Mathf.Cos(angle));
 
-        GameObject obj = Instantiate(shellPrefab, muzzle, Quaternion.LookRotation(vel));
-        Cannon c = obj.GetComponent<Cannon>();
-        c.fromEnemy = true;
-        c.damage = damage;
+        Cannon c = SpawnShell(muzzle, Quaternion.LookRotation(vel));
         c.speed = 0f;                    // AddForce 대신 속도를 직접 넣는다
         c.lifetime = flightTime + 2f;
-        obj.GetComponent<Rigidbody>().linearVelocity = vel;
+        c.GetComponent<Rigidbody>().linearVelocity = vel;
 
         if (markerPrefab != null)
         {

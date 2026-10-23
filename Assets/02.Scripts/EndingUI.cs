@@ -13,7 +13,6 @@ public class EndingUI : MonoBehaviour
     public Sprite headerIcon;
     public Sprite retryIcon;
     public Sprite homeIcon;
-    public Sprite recordIcon;
     public Material skybox; // 승리는 밝은 하늘, 패배는 어두운 하늘 (비우면 단색 배경)
 
     static readonly Color Olive = new Color(0.33f, 0.38f, 0.2f, 1f);

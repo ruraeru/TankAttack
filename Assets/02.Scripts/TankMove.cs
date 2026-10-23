@@ -15,7 +15,6 @@ public class TankMove : MonoBehaviour
     Terrain terrain;
     float h, v;
     bool boosting;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         rbody = GetComponent<Rigidbody>();
@@ -32,7 +31,6 @@ public class TankMove : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
         h = Input.GetAxis("Horizontal"); //방향키 좌우(-1 - +1 값 리턴)

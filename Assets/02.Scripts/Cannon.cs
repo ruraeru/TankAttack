@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 
 public class Cannon : MonoBehaviour
@@ -17,14 +16,13 @@ public class Cannon : MonoBehaviour
     private CapsuleCollider _collider;
     Rigidbody _rigidbody;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         _collider = GetComponent<CapsuleCollider>();
         _rigidbody = GetComponent<Rigidbody>();
-        GetComponent<Rigidbody>().AddForce(transform.forward * speed);
+        _rigidbody.AddForce(transform.forward * speed);
         _prevPos = transform.position;
-        StartCoroutine(this.ExplosionCannon(lifetime));
+        Invoke(nameof(Timeout), lifetime);
     }
     // 고속탄은 한 프레임에 지형을 뚫고 지나가므로, 이전 위치에서 현재 위치까지 레이를 쏴서 먼저 닿은 곳에서 터뜨린다
     void FixedUpdate()
@@ -79,11 +77,12 @@ public class Cannon : MonoBehaviour
         if (fromEnemy) return c.GetComponentInParent<EnemyAI>() == null;
         return !c.CompareTag("Player");
     }
-    IEnumerator ExplosionCannon(float tm)
+    void Timeout() => Explode(transform.position, Vector3.up); // lifetime 타이머: 허공에서 터짐
+    // 중력으로 처지는 포탄이 dist만큼 날아가는 동안 떨어지는 높이 (AddForce 속도 = speed * fixedDeltaTime / mass)
+    public static float GravityDrop(float speed, float mass, float dist)
     {
-
-        yield return new WaitForSeconds(tm);
-        Explode(transform.position, Vector3.up); // 3초 타이머: 허공에서 터짐
+        float t = dist / Mathf.Max(1f, speed * Time.fixedDeltaTime / mass);
+        return 0.5f * Mathf.Abs(Physics.gravity.y) * t * t;
     }
     void Explode(Vector3 point, Vector3 normal, EnemyAI alreadyHit = null)
     {
@@ -112,7 +111,7 @@ public class Cannon : MonoBehaviour
         foreach (Renderer r in GetComponentsInChildren<MeshRenderer>()) r.enabled = false;
         //폭발 프리팹 생성
         SpawnEffect(expEffect, point + normal * effectLift, effectScale);
-        Destroy(this.gameObject, 1.0f); //Trail Renderer가 사라질 때 까지 기다림
+        Destroy(gameObject, 1.0f); //Trail Renderer가 사라질 때 까지 기다림
     }
     // 폭발 이펙트를 만들고 3초 뒤 지운다 (Particle Pack 이펙트가 길다). 배율을 주면 파티클 크기도 같이 키운다
     public static GameObject SpawnEffect(GameObject prefab, Vector3 pos, float scale)
@@ -133,10 +132,5 @@ public class Cannon : MonoBehaviour
     void DamagePlayer()
     {
         if (GameManager.instance != null) GameManager.instance.DamagePlayer(Mathf.RoundToInt(damage));
-    }
-    // Update is called once per frame
-    void Update()
-    {
-
     }
 }

@@ -5,14 +5,12 @@ namespace UnityStandardAssets.Utility
 {
 	public class SmoothFollow : MonoBehaviour
 	{
-
-		// The target we are following
 		[SerializeField]
 		public Transform target;
-		// The distance in the x-z plane to the target
+		// x-z 평면에서 목표와의 거리
 		[SerializeField]
 		private float distance = 10.0f;
-		// the height we want the camera to be above the target
+		// 목표보다 카메라를 올릴 높이
 		[SerializeField]
 		private float height = 5.0f;
 
@@ -21,41 +19,17 @@ namespace UnityStandardAssets.Utility
 		[SerializeField]
 		private float heightDamping;
 
-		// Use this for initialization
-		void Start() { }
-
-		// Update is called once per frame
 		void LateUpdate()
 		{
-			// Early out if we don't have a target
 			if (!target)
 				return;
 
-			// Calculate the current rotation angles
-			var wantedRotationAngle = target.eulerAngles.y;
-			var wantedHeight = target.position.y + height;
+			var currentRotationAngle = Mathf.LerpAngle(transform.eulerAngles.y, target.eulerAngles.y, rotationDamping * Time.deltaTime);
+			var currentHeight = Mathf.Lerp(transform.position.y, target.position.y + height, heightDamping * Time.deltaTime);
 
-			var currentRotationAngle = transform.eulerAngles.y;
-			var currentHeight = transform.position.y;
-
-			// Damp the rotation around the y-axis
-			currentRotationAngle = Mathf.LerpAngle(currentRotationAngle, wantedRotationAngle, rotationDamping * Time.deltaTime);
-
-			// Damp the height
-			currentHeight = Mathf.Lerp(currentHeight, wantedHeight, heightDamping * Time.deltaTime);
-
-			// Convert the angle into a rotation
-			var currentRotation = Quaternion.Euler(0, currentRotationAngle, 0);
-
-			// Set the position of the camera on the x-z plane to:
-			// distance meters behind the target
-			transform.position = target.position;
-			transform.position -= currentRotation * Vector3.forward * distance;
-
-			// Set the height of the camera
-			transform.position = new Vector3(transform.position.x ,currentHeight , transform.position.z);
-
-			// Always look at the target
+			// 목표 뒤 distance만큼 x-z 평면에 놓고 높이만 따로 댐핑한다
+			var pos = target.position - Quaternion.Euler(0, currentRotationAngle, 0) * Vector3.forward * distance;
+			transform.position = new Vector3(pos.x, currentHeight, pos.z);
 			transform.LookAt(target);
 		}
 	}

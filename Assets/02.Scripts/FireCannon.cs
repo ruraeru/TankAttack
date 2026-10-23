@@ -16,7 +16,7 @@ public class ShellType
 
 public class FireCannon : MonoBehaviour
 {
-    public GameObject cannon = null;
+    public GameObject cannon;
     public Transform firePos;
     public ShellType[] shells =
     {
@@ -36,8 +36,8 @@ public class FireCannon : MonoBehaviour
         }
     }
 
-    AudioClip fireSfx = null;
-    AudioSource sfx = null;
+    AudioClip fireSfx;
+    AudioSource sfx;
     float nextFireTime;
 
     private void Awake()
@@ -47,7 +47,6 @@ public class FireCannon : MonoBehaviour
         sfx = GetComponent<AudioSource>();
     }
 
-    // Update is called once per frame
     void Update()
     {
         // 숫자 키 1~9로 포탄 선택 (탱크마다 포탄 수가 다르다)

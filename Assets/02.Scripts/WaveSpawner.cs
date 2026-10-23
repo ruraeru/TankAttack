@@ -21,7 +21,6 @@ public class WaveSpawner : MonoBehaviour
     public float waveDelay = 5f;
 
     readonly List<EnemyAI> alive = new List<EnemyAI>();
-    bool spawning;
     WaveHUD hud;
 
     IEnumerator Start()
@@ -47,7 +46,6 @@ public class WaveSpawner : MonoBehaviour
 
     IEnumerator SpawnWave(int wave)
     {
-        spawning = true;
         int count = baseCount + countPerWave * (wave - 1);
         List<GameObject> order = BuildOrder(wave, count);
         for (int i = 0; i < order.Count; i++)
@@ -61,7 +59,6 @@ public class WaveSpawner : MonoBehaviour
             if (ai != null) alive.Add(ai);
             yield return new WaitForSeconds(spawnInterval);
         }
-        spawning = false;
     }
 
     // 이번 웨이브에 처음 열린 종류는 1대씩 먼저 넣고, 나머지는 열린 종류 중 가중치로 뽑아 섞는다

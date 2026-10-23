@@ -51,11 +51,7 @@ public class CannonCtrl : MonoBehaviour
             GameObject prefab = shell.shellPrefab != null ? shell.shellPrefab : fire.cannon;
             Rigidbody rb = prefab != null ? prefab.GetComponent<Rigidbody>() : null;
             if (rb != null && rb.useGravity)
-            {
-                float v = shell.speed * Time.fixedDeltaTime / rb.mass;
-                float t = Vector3.Distance(tr.position, target) / Mathf.Max(1f, v);
-                target.y += 0.5f * Mathf.Abs(Physics.gravity.y) * t * t;
-            }
+                target.y += Cannon.GravityDrop(shell.speed, rb.mass, Vector3.Distance(tr.position, target));
         }
         Vector3 local = tr.parent != null ? tr.parent.InverseTransformPoint(target) - tr.localPosition : target - tr.position;
         return Mathf.Atan2(local.y, new Vector2(local.x, local.z).magnitude) * Mathf.Rad2Deg;
