@@ -53,6 +53,7 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
   - 자동 조준: `TurretCtrl`이 마우스 레이 둘레 `airAimRadius`(4m) 안의 공중 적을 찾으면 포탑을 그쪽으로 돌리고 `CannonCtrl.SetAutoTarget`으로 포신 각도를 자동으로 맞춘다 (현재 포탄이 중력을 받으면 `Cannon.GravityDrop`만큼 높여 잡는다). 헬기 조준과 지형 조준은 같은 `TurretCtrl.RotateToward`로 돈다. 공중 적을 벗어나면 휠 조작으로 돌아간다. 플레이어 탱크 포신 최대각은 45°다 (두 프리팹의 `CannonCtrl.maxAngle`).
 - **레이어**: `TurretCtrl`은 레이어 8 (`Terrain`)에만 레이캐스트한다 (`1 << 8`). 지형 레이어를 바꾸면 포탑 조준이 멈춘다.
 - **태그**: `Player` 태그를 `EnemyAI`와 `Item`이 사용한다. 플레이어 `Tank`에 이 태그가 있어야 한다.
+- **앱 아이콘**: `Assets/04.Images/UI/AppIcon.png` (Mk.1 탱크 렌더링)를 Default Icon과 Standalone (Windows) 아이콘 8개 크기 (1024~16)에 모두 지정했다 (`PlayerSettings.SetIcons(NamedBuildTarget.Standalone, ...)`). 설정은 `ProjectSettings.asset`에 저장되고, 제출용 Windows 실행 파일은 Windows PC에서 저장소를 클론해 빌드한다. Windows 빌드에서 아이콘이 나오는지는 아직 확인하지 못했다.
 - **GameManager**: `GameManager.instance` 싱글턴이 `playerHP`, 웨이브 진행, 씬 전환을 가진다. 씬 전환은 이름 문자열로 한다. `MainScene`에도 `GameManager` 오브젝트를 넣었다.
 - **엔딩 (`Ending_Win`, `Ending_Lose`)**: 씬마다 `EndingUI` (`win` 플래그) 오브젝트 하나뿐이고 화면은 `Build()`가 `Start`에서 코드로 만든다. 가운데 올리브 패널 (1100×760, 위아래 강조선), 헤더 아이콘, 제목 (88), 부제, 점수 (64, 0에서 올라가는 연출), 최고 기록 (40), `NEW RECORD!` (깜빡임), 버튼 둘 (다시 하기 → `MainScene`, 처음으로 → `IntroScene`)이다. 아이콘은 `headerIcon` (승리 `Mil_Trophy`, 패배 `Mil_Cancel`), `retryIcon` (`Mil_Restart`), `homeIcon` (`Mil_Home`) 필드에 씬에서 직접 연결한다. 하늘은 `skybox` 필드 (승리 `Epic_BlueSunset`, 패배 `Deep Dusk`)를 `RenderSettings.skybox`에 넣고 카메라를 Skybox 모드로 쓴다 (비우면 단색). 하늘 위에 어두운 덮개는 깔지 않는다 (가운데 패널만 어둡다). 점수는 `ScoreBoard` (`PlayerPrefs` `BestScore`)에서 읽는다. 편집 모드에서 `Build()`를 불러 캔버스를 Screen Space Camera로 바꾸고 `CanvasGroup.alpha`를 1로 둔 뒤 `Camera.Render`로 PNG를 찍어 레이아웃을 확인했다 (씬은 저장하지 않고 다시 연다).
 - **NavMesh (`MainScene`)**: `com.unity.ai.navigation` 2.0.16 패키지의 `NavMeshSurface`가 `NavMesh` 오브젝트에 붙어 있고, 데이터는 `Assets/01.Scenes/MainScene/NavMesh-NavMesh.asset`이다. 산이 가팔라서 에이전트 최대 경사를 기본 45°에서 60°로 올렸다 (`ProjectSettings/NavMeshAreas.asset`). 올린 뒤에야 `EnemySpawn_1~4`에서 `PlayerSpawn`까지 `PathComplete`가 나온다. 지형이나 건물을 바꾸면 `NavMeshSurface.BuildNavMesh()`로 다시 굽는다.
@@ -117,11 +118,12 @@ Unity 6 (`6000.5.10f1`) 탱크 슈터 게임. 게임 스크립트는 `Assets/02.
 - **슬라이드 14 (공습)**: 공습이 떨어지는 장면 렌더링 (`IMG_airstrike_drop`)을 큰 이미지로 쓰고, 기존 Su-57 이미지는 오른쪽 아래에 작게 넣었다.
 - **슬라이드 17 (포탄 4종)**: 카드마다 탱크가 포탄을 쏘는 렌더링을 위쪽에 넣었다 (`ShellImage1~4`). 포탄 3종은 모델이 없어서 구체와 선으로 궤적을 흉내 냈다. 카드 높이는 680이다. 카드 아래쪽에 피해·반경, 쿨다운, 초당 피해, 일반 적 (HP 100) 격파 발수 4줄을 넣었다 (값은 두 탱크 프리팹의 `FireCannon.shells`). 포탄 수치를 바꾸면 이 슬라이드도 고친다.
 - **코드 슬라이드 (28~37번)**: 같은 형식으로 다시 만들었다. 제목 아래 한 줄 요약, 왼쪽 코드 패널 (파일명, 색 구분, 주석에 ①②③④ 번호), 오른쪽에 같은 번호의 설명과 맨 아래 "핵심" 박스다. 코드는 22~27줄로 줄였고, 33번 자주포는 공식을 빼고 쉽게 줄였다. 코드가 길면 패널이 화면 아래 여백 약 45px까지 내려온다. 2026-10-23 스크립트 정리 커밋 (`406682c`)에 맞춰 29 (`RotateToward`), 30 (`AimLaser.LateUpdate`, 화면에 맞추려고 대입 몇 줄을 한 줄로 합쳤다), 33 (`SpawnShell`), 36 (`GravityDrop` 설명)을 고쳤다. 코드 색은 키워드 `#ed9e61`, 타입 `#80ccdb`, 주석 `#8cb273`, 숫자 `#c7db8c`, 기본 `#e0ebd1`이고 ①②③④는 `Noto Sans KR Bold` `#ffd94d`다.
+- **AI 활용 슬라이드 (38, 39번)**: 코드 슬라이드 뒤에 있다. 38번은 사용한 도구 / 내가 한 일 / AI가 도운 일 카드 3장과 작업 흐름 (요청 → AI 코드 작성 → 편집 모드 검증 → Play 확인 → 피드백), 커밋 27개 중 25개 Claude 공동 작성 표기다. 39번은 AI 도움으로 해결한 문제 7개 표 (문제 / 해결 방법 / 코드 위치)다.
 - **수정할 때**: 슬라이드는 `figma.currentPage`의 `SLIDE_GRID` 첫 `SLIDE_ROW` 안에 있다. `getSlideGrid()`는 같은 호출 안에서 최신이 아닐 수 있어 순서 변경은 `row.insertChild`로 한다. 코드 슬라이드는 코드를 표시용으로 줄여 옮겼으니 소스를 바꾸면 슬라이드도 고친다. 글꼴은 `Noto Sans KR`과 `Roboto Mono`다.
 
 ## 작업 방식
 
 - Play 모드 조작과 육안 확인은 사용자가 한다. Claude는 MCP의 Scene View 캡처와 에디터 모드 물리 시뮬레이션으로 검증하고, Play에서 확인하지 못한 것은 확인하지 못했다고 말한다.
 - 커밋 메시지는 `feat:` 접두어에 한국어로 쓴다. 푸시는 사용자가 요청할 때만 한다.
-- 커밋하지 않는 변경: `ProjectSettings/GraphicsSettings.asset`, `VFXManager.asset`, `ShaderGraphSettings.asset`, `DynamicsManager.asset`, `ProjectSettings.asset`, `TankAttack.slnx` (Unity가 다시 저장한 파일이거나 지운 URP/HDRP 흔적이다).
+- 커밋하지 않는 변경: `ProjectSettings/GraphicsSettings.asset`, `VFXManager.asset`, `ShaderGraphSettings.asset`, `DynamicsManager.asset`, `ProjectSettings.asset`, `TankAttack.slnx` (Unity가 다시 저장한 파일이거나 지운 URP/HDRP 흔적이다). 단 `ProjectSettings.asset`은 앱 아이콘처럼 빌드에 필요한 설정을 바꿨을 때는 커밋한다 (바이너리라 다른 변경도 같이 들어간다).
 - 에셋을 새로 들일 때는 Built-in 호환 여부를 먼저 확인한다. 큰 에셋은 쓰는 파일만 올리도록 `.gitignore`를 조정한다 (`TerrainSampleAssets` 선례).
